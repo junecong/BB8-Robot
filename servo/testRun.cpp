@@ -30,8 +30,41 @@ int startMotors (libusb_device_handle *handle, float speed) {
 	return r;
 }
 
+// moves 2 motors with respective speed
+int motorOneDirection (libusb_device_handle *handle, float rSpeed, float lSpeed) {
+	int r;
+	// Assumed 4 servos
+	r = libusb_control_transfer( handle,
+				0x40,	  //request type
+				0x85,	  //request
+				4*rSpeed,  //speed/value
+				0,		  //servo number
+				NULL,
+				0,
+				5000);
+	if (r < 0) {
+		cout << "Error starting motor " << 0 << endl;
+		return -1;
+	}
+	r = libusb_control_transfer( handle,
+				0x40,	  //request type
+				0x85,	  //request
+				4*lSpeed,  //speed/value
+				4,		  //servo number
+				NULL,
+				0,
+				5000);
+	if (r < 0) {
+		cout << "Error starting motor " << 2 << endl;
+		return -1;
+	}
+
+	return r;
+
+}
+
 // Two-Wheel method
-int motorOneDirection (libusb_device_handle *handle, float speed) {
+int motorTurn (libusb_device_handle *handle, float speed) {
 	int r;
 	// Assumed 4 servos
 	r = libusb_control_transfer( handle,
@@ -49,7 +82,7 @@ int motorOneDirection (libusb_device_handle *handle, float speed) {
 	r = libusb_control_transfer( handle,
 				0x40,	  //request type
 				0x85,	  //request
-				4*((3000-speed)),  //speed/value
+				4*speed,  //speed/value
 				4,		  //servo number
 				NULL,
 				0,
@@ -62,65 +95,6 @@ int motorOneDirection (libusb_device_handle *handle, float speed) {
 	return r;
 
 }
-
-// Omni-wheel method
-// int motorOneDirection (libusb_device_handle *handle, float speed) {
-// 	int r;
-// 	// Assumed 4 servos
-// 	r = libusb_control_transfer( handle,
-// 				0x40,	  //request type
-// 				0x85,	  //request
-// 				4*speed,  //speed/value
-// 				0,		  //servo number
-// 				NULL,
-// 				0,
-// 				5000);
-// 	if (r < 0) {
-// 		cout << "Error starting motor " << 0 << endl;
-// 		return -1;
-// 	}
-// 	r = libusb_control_transfer( handle,
-// 				0x40,	  //request type
-// 				0x85,	  //request
-// 				4*(3000-speed),  //speed/value
-// 				2,		  //servo number
-// 				NULL,
-// 				0,
-// 				5000);
-// 	if (r < 0) {
-// 		cout << "Error starting motor " << 0 << endl;
-// 		return -1;
-// 	}
-
-
-// 	r = libusb_control_transfer( handle,
-// 				0x40,	  //request type
-// 				0x85,	  //request
-// 				4*(3000-speed),  //speed/value
-// 				4,		  //servo number
-// 				NULL,
-// 				0,
-// 				5000);
-// 	if (r < 0) {
-// 		cout << "Error starting motor " << 2 << endl;
-// 		return -1;
-// 	}
-// 	r = libusb_control_transfer( handle,
-// 				0x40,	  //request type
-// 				0x85,	  //request
-// 				4*(speed),  //speed/value
-// 				6,		  //servo number
-// 				NULL,
-// 				0,
-// 				5000);
-// 	if (r < 0) {
-// 		cout << "Error starting motor " << 0 << endl;
-// 		return -1;
-// 	}
-
-// 	return r;
-
-// }
 
 int main(int argc, char *argv[]) {
 
@@ -137,10 +111,10 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-	// Value of 1000 is max in forward direction
-	// Value of 1500 and 0 is neutral
-	// Value of 2000 is max in backward direction
-	float percentSpeed = 500 * (speedInput/100.0);
+	// Value of 1040 is max in forward direction
+	// Value of 1490 and 0 is neutral
+	// Value of 1940 is max in backward direction
+	float percentSpeed = 450 * (speedInput/100.0);
 
 	libusb_context *ctx = NULL;
 	libusb_device_handle *handle;
@@ -168,17 +142,26 @@ int main(int argc, char *argv[]) {
 
 	r = libusb_claim_interface(handle, 0);
 
+	// lSpeed has a bias of 5
+	int rSpeed = 0;
+	int lSpeed = 0;
 	int speed = 0;
 	if (strcmp(direction, "forward") == 0) {
-		speed = 1500 - percentSpeed;
-		// startMotors(handle, speed);
-		motorOneDirection(handle, speed);
+		rSpeed = 1490 - percentSpeed;
+		lSpeed = 1495 + percentSpeed;
+		motorOneDirection(handle, rSpeed, lSpeed);
 	} else if (strcmp(direction, "backward") == 0) {
-		speed = 1500 + percentSpeed;
-		motorOneDirection(handle, speed);
-		// startMotors(handle, speed);
+		rSpeed = 1490 + percentSpeed;
+		lSpeed = 1495 - percentSpeed;
+		motorOneDirection(handle, rSpeed, lSpeed);
+	} else if (strcmp(direction, "right") == 0) {
+		speed = 1490 + percentSpeed;
+		motorTurn(handle, speed);
+	} else if (strcmp(direction, "left") == 0) {
+		speed = 1490 - percentSpeed;
+		motorTurn(handle, speed);
 	} else if (strcmp(direction, "stop") == 0) {
-		startMotors(handle, speed);
+		startMotors(handle, 0);
 	} else {
 		cout << "invalid string" << endl;
 	}
