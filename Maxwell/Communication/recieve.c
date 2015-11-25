@@ -7,32 +7,44 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include "../Servo/motorControl.cpp"
 
 #define PORTNO 51717
+
+int move(char data[], int speedVal);
 
 void error(const char *msg) {
     perror(msg);
     exit(1);
 }
 
-void decodePacket(char *packet, int size) {
-    if (packet[0] == '0' && packet[size-1] == '1') {
+// puts packet string into data array
+void getString (char *packet, char data[], int *index) {
+    int i = 0;
+    while (packet[*index] != '*') {
+        data[i] = packet[(*index)++];
+        i++;
+    }
+
+    data[i] = '\0';
+    *index += 4;
+
+    // check if data exists
+    if (data[0] == '\0') {
+        data = "error";
+    }
+}
+
+void decodePacket(char *packet, int len, char size[], char id[], char data[]) {
+    if (packet[0] == '0' && packet[len-1] == '1') {
         int index = 3;
-        char *id;
-        while (packet[index] != '*') {
-            // strcat(id, packet[index++]);
-            printf("%c\n", packet[index++]);
-        }
+        getString(packet, size, &index);
+        getString(packet, id, &index);
+        getString(packet, data, &index);
     } else {
         printf("%s\n", "segmented packet: Incorrect Start and End");
     }
 }
-
-// void main() {
-//     char *test = "0/*8*//*2*//*1231413*/1";
-//     int size = strlen(test);
-//     decodePacket(test, size);
-// }
 
 int main(int argc, char *argv[]) {
     int sockfd, newsockfd, portno;
@@ -40,6 +52,10 @@ int main(int argc, char *argv[]) {
     char buffer[256];
     struct sockaddr_in serv_addr, cli_addr;
     int n;
+
+    char size[10];
+    char id[10];
+    char data[20];
 
     int defaultPort;
     if (argc < 2) {
@@ -74,6 +90,9 @@ int main(int argc, char *argv[]) {
     }
 
     while (1) {
+        memset(size, 0, 10);
+        memset(id, 0, 10);
+        memset(data, 0, 20);
         memset(buffer, 0, 256);
         // read data
         // n = read(newsockfd,buffer,255);
@@ -85,7 +104,9 @@ int main(int argc, char *argv[]) {
 
         printf("Here is the message: %s\n", buffer);
         //decode buffer
-        decodePacket(buffer, strlen(buffer));
+        decodePacket(buffer, strlen(buffer), size, id, data);
+        // call to drive motors
+        move(data, 50);
 
         n = write(newsockfd, "I got your message", 18);
 

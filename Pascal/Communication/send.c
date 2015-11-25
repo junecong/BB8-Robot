@@ -66,15 +66,19 @@ void itoa(int num, char *str) {
     str[index] = '\0';
 }
 
-void packMessage(int id, int data, char *str) {
+// removes newline from string
+void choppy( char *s ) {
+    s[strcspn (s, "\n")] = '\0';
+}
+
+void packMessage(int id, char *data, char *str) {
     // BUG: for some reason, putting itoa(data)
     // before itoa(id) causes the data to be erased
     // if not inputing from stdin
     char id_s[15];
-    char data_s[15];
-    itoa(data, data_s);
     itoa(id, id_s);
-    int bodySize = strlen(data_s) + strlen(id_s);
+    choppy(data);
+    int bodySize = strlen(data) + strlen(id_s);
     char bodySize_s[20];
     itoa(bodySize, bodySize_s);
 
@@ -89,8 +93,8 @@ void packMessage(int id, int data, char *str) {
     strcat(str, id_s);
     strcat(str, "*/");
     strcat(str, "/*");
-    printf("data: %s\n", data_s);
-    strcat(str, data_s);
+    printf("data: %s\n", data);
+    strcat(str, data);
     strcat(str, "*/");
     strcat(str, "1");
     printf("HERE:  %s\n", str);
@@ -158,7 +162,7 @@ int main(int argc, char *argv[]) {
         int i = atoi(buffer);
         // create data packet
         char temp[256];
-        packMessage(testID, atoi(buffer), temp);
+        packMessage(testID, buffer, temp);
         int sizeofPacket = strlen(temp) + 1;
         char packet[sizeofPacket];
         memset(packet, 0, sizeofPacket);
