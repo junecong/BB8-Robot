@@ -105,10 +105,15 @@ int main(int argc, char *argv[]) {
         printf("Here is the message: %s\n", buffer);
         //decode buffer
         decodePacket(buffer, strlen(buffer), size, id, data);
-        // call to drive motors
-        move(data, 50);
-
-        n = write(newsockfd, "I got your message", 18);
+        if (strcmp(data, "exit") == 0) {
+            n = write(newsockfd, "done", 5);
+            move("stop", 50);
+            break;
+        } else {
+            // call to drive motors
+            move(data, 50);
+            n = write(newsockfd, "I got your message", 18);
+        }
 
         if (n < 0) {
             error("ERROR writing to socket");
