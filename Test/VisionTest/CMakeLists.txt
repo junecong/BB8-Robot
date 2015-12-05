@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+project(motionTrack)
+find_package(OpenCV REQUIRED)
+add_executable(motionTrack motionTrack.cpp)
+target_link_libraries(motionTrack ${OpenCV_LIBS})
