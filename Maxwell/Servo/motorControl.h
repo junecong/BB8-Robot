@@ -1,11 +1,13 @@
 // Test code for motor control
-
 #include <iostream>
 #include <string>
 #include <cstring>
 #include <libusb-1.0/libusb.h>
 #include <unistd.h>
 #include <stdlib.h>
+
+#ifndef MOTORCONTROL_H
+#define MOTORCONTROL_H
 
 using namespace std;
 
@@ -21,4 +23,6 @@ int motorOneDirection (libusb_device_handle *handle, float rSpeed, float lSpeed)
 int motorTurn (libusb_device_handle *handle, float speed);
 
 // Main function that runs the servos
-int move (char data[], int speedVal);
+// int move (char data[], int speedVal);
+
+#endif

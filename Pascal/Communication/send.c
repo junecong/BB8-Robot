@@ -8,6 +8,10 @@
 #include <netdb.h> 
 
 #define PORT 51717
+
+// change ip to ip of device
+// current ip after wifi script, DO NOT CHANGE
+// static char *ip = "192.168.42.1";
 static char *ip = "192.168.42.1";
 
 void error(const char *msg)
@@ -68,9 +72,10 @@ void itoa(int num, char *str) {
 
 // removes newline from string
 void choppy( char *s ) {
-    s[strcspn (s, "\n")] = '\0';
+    s[strcspn(s, "\n")] = '\0';
 }
 
+// Packs Message as 0/*sizeOfPacket*//*idOfSensor*//*data*/1
 void packMessage(int id, char *data, char *str) {
     // BUG: for some reason, putting itoa(data)
     // before itoa(id) causes the data to be erased
@@ -82,8 +87,6 @@ void packMessage(int id, char *data, char *str) {
     char bodySize_s[20];
     itoa(bodySize, bodySize_s);
 
-    // // 6 for /**/, 1 for \0, 3 for buffer of size
-    // char *str = malloc(bodySize + 12);
     memset(str, 0, strlen(str));
     strcat(str, "0");
     strcat(str, "/*");
@@ -111,7 +114,7 @@ int main(int argc, char *argv[]) {
     int defaultPort;
 
     if (argv[1] == NULL) {
-        printf("Using default ip: 192.168.42.1 and default port: 51717...\n");
+        printf("%s %s %s %d\n", "Using default ip: ", ip, " and default port: ", PORT);
         defaultIp = ip;
         defaultPort = PORT;
     } else {
@@ -147,6 +150,8 @@ int main(int argc, char *argv[]) {
     if (connect(sockfd,(struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         error("ERROR connecting");
     }
+
+    // test id for sensor
     int testID = 0;
 
     while (1) {
@@ -154,6 +159,7 @@ int main(int argc, char *argv[]) {
         if (testID > 10) {
             testID = 0;
         } 
+
         // for testing, input data
         printf("Please enter the message: ");
         memset(buffer, 0, 256);
@@ -167,6 +173,7 @@ int main(int argc, char *argv[]) {
         char packet[sizeofPacket];
         memset(packet, 0, sizeofPacket);
         memcpy(packet, temp, sizeofPacket);
+
         // send data packet
         n = write(sockfd, packet, strlen(packet) + 1);
 
@@ -179,10 +186,11 @@ int main(int argc, char *argv[]) {
         if (n < 0) {
             error("ERROR reading from socket");
         }
-        
+
         if (strcmp(buffer, "done") == 0) {
             break;
         }
+        // increment sensorId to test multiple sensors
         testID+=1;
     }
     close(sockfd);

@@ -7,7 +7,7 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "../Servo/motorControl.cpp"
+#include "../Servo/motorControl.h"
 
 #define PORTNO 51717
 
@@ -35,6 +35,7 @@ void getString (char *packet, char data[], int *index) {
     }
 }
 
+// Decodes received message and puts them into the respective char array
 void decodePacket(char *packet, int len, char size[], char id[], char data[]) {
     if (packet[0] == '0' && packet[len-1] == '1') {
         int index = 3;
@@ -94,6 +95,7 @@ int main(int argc, char *argv[]) {
         memset(id, 0, 10);
         memset(data, 0, 20);
         memset(buffer, 0, 256);
+
         // read data
         // n = read(newsockfd,buffer,255);
         n = read(newsockfd, buffer, sizeof(buffer));
@@ -103,14 +105,16 @@ int main(int argc, char *argv[]) {
         }
 
         printf("Here is the message: %s\n", buffer);
+
         //decode buffer
         decodePacket(buffer, strlen(buffer), size, id, data);
+
         if (strcmp(data, "exit") == 0) {
             n = write(newsockfd, "done", 5);
             move("stop", 50);
             break;
         } else {
-            // call to drive motors
+            // call to drive motors in Servo/motorControl.cpp
             move(data, 50);
             n = write(newsockfd, "I got your message", 18);
         }
