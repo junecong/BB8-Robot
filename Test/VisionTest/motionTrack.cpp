@@ -1,71 +1,78 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <queue>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+
+#define MAXQUEUESIZE 32
 
 using namespace cv;
 using namespace std;
 
 // detect circle and get color bounds
-void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound) {
-	Vec3f centerPixel = (0, 0);
-	Vec3f outerPixel = (0, 0);
-	bool detectCircle = false;
+// void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound) {
+// 	Vec3f centerPixel = (0, 0);
+// 	Vec3f outerPixel = (0, 0);
+// 	bool detectCircle = false;
 
-	while (!detectCircle) {
-		Mat frame, gray;
-		cap.read(frame);
-		if (frame.empty()) {
-			break;
-		}
-		// convert to gray
-		cvtColor(frame, gray, CV_BGR2GRAY);
-		// blur to reduce noise
-		GaussianBlur(gray, gray, Size(9, 9), 2, 2);
-		vector<Vec3f> circles;
-		imshow("gray frame", gray);
+// 	while (!detectCircle) {
+// 		Mat frame, gray;
+// 		cap.read(frame);
+// 		if (frame.empty()) {
+// 			break;
+// 		}
+// 		// convert to gray
+// 		cvtColor(frame, gray, CV_BGR2GRAY);
+// 		// blur to reduce noise
+// 		GaussianBlur(gray, gray, Size(9, 9), 2, 2);
+// 		vector<Vec3f> circles;
+// 		imshow("gray frame", gray);
 
-		// Hough transform to find circles
-		HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 1, gray.rows/8, 200, 100, 0, 0);
-		if (circles.size() > 0) {
-			detectCircle = true;
-			// draw circles
-			for (int i = 0; i < circles.size(); i++) {
-				Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-				int radius = cvRound(circles[i][2]);
-				centerPixel = frame.at<Vec3f>(center.x, center.y);
-				cout << (int)centerPixel[0] << " " << (int)centerPixel[1] << " " << (int)centerPixel[2] << endl;
-				outerPixel = frame.at<Vec3f>(center.x + radius - 1, center.y + radius - 1);
-				circle(frame, center, 3, Scalar(0,255,0), 3, 8, 0);
-				circle(frame, center, radius, Scalar(0,0,255), 3, 8, 0);
-				cout << "Center: " << center << "\nRadius: " << radius << endl;
-			}
-			*lowerBound = Scalar((int)centerPixel[0], (int)centerPixel[1], (int)centerPixel[2]);
-			*upperBound = Scalar((int)outerPixel[0], (int)outerPixel[1], (int)outerPixel[2]);
-			cout << (int)centerPixel[0] <<" " << (int)centerPixel[1] << " " << (int)centerPixel[2] << endl;
-			cout << (int)outerPixel[0] <<" " <<(int)outerPixel[1]<< " " << (int)outerPixel[2] << endl;
-		}
-		// imshow not supported on intel boards
-		// comment out when not on Pascal
-		imshow("current frame", frame);
+// 		// Hough transform to find circles
+// 		HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 1, gray.rows/8, 200, 100, 0, 0);
+// 		if (circles.size() > 0) {
+// 			detectCircle = true;
+// 			// draw circles
+// 			for (int i = 0; i < circles.size(); i++) {
+// 				Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+// 				int radius = cvRound(circles[i][2]);
+// 				centerPixel = frame.at<Vec3f>(center.x, center.y);
+// 				cout << (int)centerPixel[0] << " " << (int)centerPixel[1] << " " << (int)centerPixel[2] << endl;
+// 				outerPixel = frame.at<Vec3f>(center.x + radius - 1, center.y + radius - 1);
+// 				circle(frame, center, 3, Scalar(0,255,0), 3, 8, 0);
+// 				circle(frame, center, radius, Scalar(0,0,255), 3, 8, 0);
+// 				cout << "Center: " << center << "\nRadius: " << radius << endl;
+// 			}
+// 			*lowerBound = Scalar((int)centerPixel[0], (int)centerPixel[1], (int)centerPixel[2]);
+// 			*upperBound = Scalar((int)outerPixel[0], (int)outerPixel[1], (int)outerPixel[2]);
+// 			cout << (int)centerPixel[0] <<" " << (int)centerPixel[1] << " " << (int)centerPixel[2] << endl;
+// 			cout << (int)outerPixel[0] <<" " <<(int)outerPixel[1]<< " " << (int)outerPixel[2] << endl;
+// 		}
+// 		// imshow not supported on intel boards
+// 		// comment out when not on Pascal
+// 		imshow("current frame", frame);
 
-		if (waitKey(30) >= 0) {
-			break;
-		}
-	}
-}
+// 		if (waitKey(30) >= 0) {
+// 			break;
+// 		}
+// 	}
+// }
 
 //default camera at 0
 int main(int argc, char **argv) {
 	VideoCapture cap;
+	deque <Point2f> points;
 
-	Scalar lowerBound = Scalar(29, 86, 6);
-	Scalar upperBound = Scalar(64, 255, 255);
+	Scalar lowerBound = Scalar(50,106,100);
+	Scalar upperBound = Scalar(120,255,255);
+
+	// Scalar lowerBound = Scalar(29, 86, 6);
+	// Scalar upperBound = Scalar(64, 255, 255);
 
 	//change to 0 when on Pascal
-	if (!cap.open(2)) {
+	if (!cap.open(0)) {
 		cout << "Error detecting camera" << endl;
 		return -1;
 	}
@@ -85,9 +92,9 @@ int main(int argc, char **argv) {
 		// comment out when uploading to board
 		imshow("original frame", frame);
 		GaussianBlur(frame, blur, Size(11,11), 0, 0);
-		// imshow("blurred image", blur);
+		imshow("blurred image", blur);
 		cvtColor(blur, hsv_frame, CV_BGR2HSV);
-		// imshow("hsv image", hsv_frame);
+		imshow("hsv image", hsv_frame);
 
 
        // Create a structuring element
@@ -98,7 +105,7 @@ int main(int argc, char **argv) {
 
 		inRange(hsv_frame, lowerBound, upperBound, mask);
 		imshow("mask1", mask);
-		erode(mask, mask, element, Point(-1,-1), 3);
+		erode(mask, mask, element, Point(-1,-1), 2);
 		dilate(mask, mask, element, Point(-1,-1), 2);
 		imshow("mask", mask);
 
@@ -132,6 +139,17 @@ int main(int argc, char **argv) {
 				circle(frame, center, (int)radius, color, 2, 8, 0);
 			}
 			// drawContours(frame, contours, contour_index, color, 2, 8);
+		}
+
+		if (center != Point2f(0,0)) {
+			points.push_back(center);
+		}
+		for (int i = 1; i < points.size(); i++) {
+			line(frame, points[i - 1], points[i], Scalar(43,231,123), 6);
+		}
+
+		if(points.size() >= MAXQUEUESIZE) {
+			points.pop_front();
 		}
 
     	imshow("drawing", frame);
