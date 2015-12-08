@@ -95,7 +95,6 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
 //default camera at 0
 int main(int argc, char **argv) {
 	VideoCapture cap;
-	// fstream file("values.txt", ios::in | ios::out | ios::app);
 	ifstream infile;
 	ofstream outfile;
 	deque <Point2f> points;
@@ -108,11 +107,9 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	Scalar lowerBound = Scalar(40,106,100);
+	Scalar lowerBound = Scalar(0,0,0);
 	Scalar upperBound = Scalar(120,255,255);
 
-	// Scalar lowerBound = Scalar(29, 86, 6);
-	// Scalar upperBound = Scalar(64, 255, 255);
 	cout << "Recalibrate? Y or N: ";
 	cin >> response;
 	tolower(response[0]);
@@ -129,8 +126,10 @@ int main(int argc, char **argv) {
 			hsvArr[i] = atoi(curr_line.c_str());
 			i++;
 		}
-		lowerBound = Scalar(hsvArr[0], hsvArr[2], hsvArr[4]);
-		upperBound = Scalar(hsvArr[1], hsvArr[3], hsvArr[5]);
+		if (i > 6) {
+			lowerBound = Scalar(hsvArr[0], hsvArr[2], hsvArr[4]);
+			upperBound = Scalar(hsvArr[1], hsvArr[3], hsvArr[5]);
+		}
 	}
 
 
@@ -174,7 +173,7 @@ int main(int argc, char **argv) {
 		// bitwise_and(h,v, mask);
 		// imshow("anded", h);
 
-		imshow("mask1", mask);
+		// imshow("mask1", mask);
 		// erode(mask, mask, element, Point(-1,-1), 2);
 		// dilate(mask, mask, element, Point(-1,-1), 2);
 
@@ -186,14 +185,14 @@ int main(int argc, char **argv) {
 	    dilate(mask, mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
 	    erode(mask, mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
 
-		imshow("mask2", mask);
+		// imshow("mask2", mask);
 
 		// circle test
 		cvtColor(blur, gray, CV_BGR2GRAY);
-		imshow("gray", gray);
+		// imshow("gray", gray);
 		// play around with HoughCircle parameters to get better circle detection
 		GaussianBlur(mask, mask, Size(9,9), 0, 0);
-		imshow("blur mask", mask);
+		// imshow("blur mask", mask);
 		vector<Vec3f> circles;
 		HoughCircles(mask, circles, CV_HOUGH_GRADIENT, 2, 15, 200, 80, 0, 0);
 		// cout << circles.size() << endl;
@@ -205,7 +204,7 @@ int main(int argc, char **argv) {
 		// 	circle(frame, center, radius, Scalar(0,0,255), 3, 8, 0);
 		// 	cout << "Center: " << center << "\nRadius: " << radius << endl;
 		// }
-		imshow("current frame", frame);
+		// imshow("current frame", frame);
 
 		vector<vector<Point> > contours;
 		findContours(mask.clone(), contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
