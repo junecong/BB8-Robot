@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
 		int dX = 0;
 		int dY = 0;
 		char dXdY[200];
-
+		// hah
 		for (int i = 1; i < pt_size; i++) {
 			if (points.size() > 10) {
 				dX = (points[pt_size - 10]).x - (points[pt_size]).x;
