@@ -87,6 +87,7 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
         	file.close();
             cout << "esc key is pressed by user. Values saved." << endl;
             destroyWindow("Thresholded Image");
+            destroyWindow("Control");
             break; 
        }
     }
@@ -126,7 +127,7 @@ int main(int argc, char **argv) {
 			hsvArr[i] = atoi(curr_line.c_str());
 			i++;
 		}
-		if (i > 6) {
+		if (i > 5) {
 			lowerBound = Scalar(hsvArr[0], hsvArr[2], hsvArr[4]);
 			upperBound = Scalar(hsvArr[1], hsvArr[3], hsvArr[5]);
 		}
@@ -261,16 +262,16 @@ int main(int argc, char **argv) {
 			// }
 		}
 
-		// if (center != Point2f(0,0)) {
-		// 	points.push_back(center);
-		// }
-		// for (int i = 1; i < points.size(); i++) {
-		// 	line(frame, points[i - 1], points[i], Scalar(43,231,123), 6);
-		// }
+		if (center != Point2f(0,0)) {
+			points.push_back(center);
+		}
+		for (int i = 1; i < points.size(); i++) {
+			line(frame, points[i - 1], points[i], Scalar(43,231,123), 6);
+		}
 
-		// if(points.size() >= MAXQUEUESIZE) {
-		// 	points.pop_front();
-		// }
+		if(points.size() >= MAXQUEUESIZE) {
+			points.pop_front();
+		}
 
     	imshow("drawing", frame);
 
