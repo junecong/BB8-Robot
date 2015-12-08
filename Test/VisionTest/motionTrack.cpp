@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
 
 	// Set up camera
 	// change to 0 when on Pascal
-	if (!cap.open(0)) {
+	if (!cap.open(1)) {
 		cout << "Error detecting camera" << endl;
 		return -1;
 	}
@@ -150,31 +150,14 @@ int main(int argc, char **argv) {
 		cvtColor(blur, hsv_frame, CV_BGR2HSV);
 		// imshow("hsv image", hsv_frame);
 
-	    // Create a structuring element
-	    int erosion_size = 6;  
-        Mat element = getStructuringElement(cv::MORPH_CROSS,
-            cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
-            cv::Point(erosion_size, erosion_size) );
-
 		inRange(hsv_frame, lowerBound, upperBound, mask);
 
-		// test to see if bitwise_and will work on HSV Mat
-		// vector<Mat> test;
-		// split(hsv_frame, test);
-		// Mat h = test[0];
-		// Mat s = test[1];
-		// Mat v = test[2];
-		// inRange(h, Scalar(lowerBound[0],0,0,0), Scalar(upperBound[0],0,0,0), h);
-		// inRange(s, Scalar(lowerBound[1],0,0,0), Scalar(upperBound[1],0,0,0), s);
-		// inRange(v, Scalar(lowerBound[2],0,0,0), Scalar(upperBound[2],0,0,0), v);
-		// imshow("h", h);
-		// imshow("s", s);
-		// imshow("v", v);
-		// bitwise_and(h, s, h);
-		// bitwise_and(h,v, mask);
-		// imshow("anded", h);
-
 		// imshow("mask1", mask);
+		// Create a structuring element
+	    // int erosion_size = 6;  
+     	// Mat element = getStructuringElement(cv::MORPH_CROSS,
+     	//     cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
+     	//     cv::Point(erosion_size, erosion_size) );
 		// erode(mask, mask, element, Point(-1,-1), 2);
 		// dilate(mask, mask, element, Point(-1,-1), 2);
 
@@ -191,10 +174,10 @@ int main(int argc, char **argv) {
 		// circle test
 		cvtColor(blur, gray, CV_BGR2GRAY);
 		// imshow("gray", gray);
-		// play around with HoughCircle parameters to get better circle detection
 		GaussianBlur(mask, mask, Size(9,9), 0, 0);
 		// imshow("blur mask", mask);
 		vector<Vec3f> circles;
+		// play around with HoughCircle parameters to get better circle detection
 		HoughCircles(mask, circles, CV_HOUGH_GRADIENT, 2, 15, 200, 80, 0, 0);
 		// cout << circles.size() << endl;
 		// draw circles
@@ -231,13 +214,6 @@ int main(int argc, char **argv) {
 			minEnclosingCircle((Mat)correctContour, center, radius);
 			m = moments(contours[contour_index], false);
 
-			// for (int i = 0; i < circles.size(); i++) {
-			// 	cout << "circle" << endl;
-			// 	cout << Point(cvRound(circles[i][0]) , cvRound(circles[i][1])) << endl;
-			// 	cout << "center" << endl;
-			// 	cout << center << endl;
-			// }
-
 			int bias = 10;
 
 			if (radius > 10) {
@@ -246,13 +222,14 @@ int main(int argc, char **argv) {
 					for (int i = 0; i < circles.size(); i++) {
 						Point circleCenter = Point(cvRound(circles[i][0]), cvRound(circles[i][1]));
 						if (abs(circleCenter.x - center.x) < bias && abs(circleCenter.y - center.y) < bias) {
-							Scalar color = Scalar(40, 70, 200);
-							circle(frame, center, 3, Scalar(0,255,0), 3, 8, 0);
-							circle(frame, center, (int)radius, color, 2, 8, 0);
+							circle(frame, center, 3, Scalar(139, 100, 54), 3, 8, 0);
+							circle(frame, center, (int)radius, Scalar(0, 255, 0), 2, 8, 0);
 						}
 					}
 				} else {
-
+					// might not be object we're looking for
+					circle(frame, center, 3, Scalar(147, 20, 255), 3, 8, 0);
+					circle(frame, center, (int)radius, Scalar(0, 0, 255), 2, 8, 0);
 				}
 			}
 			// if (radius > 10) {
@@ -262,16 +239,48 @@ int main(int argc, char **argv) {
 			// }
 		}
 
+		int pt_size = points.size();
+		int x_bias = 20;
+		int y_bias = 20;
 		if (center != Point2f(0,0)) {
 			points.push_back(center);
 		}
-		for (int i = 1; i < points.size(); i++) {
+
+		int dX = 0;
+		int dY = 0;
+		char dXdY[200];
+
+		for (int i = 1; i < pt_size; i++) {
+			if (points.size() > 10) {
+				dX = (points[pt_size - 10]).x - (points[pt_size]).x;
+				dY = (points[pt_size - 10]).y - (points[pt_size]).y;
+				// cout << "10: "<< points[pt_size - 10].y << endl;
+				// cout << "y: "<< points[i].y << endl;
+				sprintf(dXdY, "dx: %d dy: %d", dX, dY);
+				// cout << "Dx: " << dX << " Dy: "<< dY << endl;
+				if (abs(dX) > x_bias) {
+					if (dX > 0) {
+						cout << " West" << endl;
+					} else {
+						cout << " East" << endl;
+					}
+				}
+				if (abs(dY) > y_bias) {
+					if (dY > 0) {
+						cout << "North" << endl;
+					} else {
+						cout << "South" << endl;
+					}
+				}
+			}
 			line(frame, points[i - 1], points[i], Scalar(43,231,123), 6);
 		}
 
-		if(points.size() >= MAXQUEUESIZE) {
+		if(pt_size >= MAXQUEUESIZE) {
 			points.pop_front();
 		}
+
+		putText(frame, dXdY, Point(10, 200), FONT_HERSHEY_SCRIPT_SIMPLEX, 1, Scalar(0,0,255));
 
     	imshow("drawing", frame);
 
