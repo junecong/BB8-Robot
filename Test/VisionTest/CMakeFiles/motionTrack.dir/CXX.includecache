@@ -9,6 +9,12 @@
 /home/minh/BB8/Test/VisionTest/motionTrack.cpp
 stdio.h
 -
+stdlib.h
+-
+iostream
+-
+queue
+-
 opencv2/opencv.hpp
 -
 opencv2/highgui/highgui.hpp
