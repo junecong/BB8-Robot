@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <iostream>
 #include <queue>
+#include <cctype>
+#include <string>
+#include <fstream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -15,7 +18,7 @@ using namespace std;
 //48 165
 //118 173
 // detect circle and get color bounds
-void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound) {
+void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstream &file) {
 
     namedWindow("Control", CV_WINDOW_AUTOSIZE); //create a window called "Control"
 	// start calibration
@@ -75,7 +78,14 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound) {
 	    imshow("Thresholded Image", imgThresholded); //show the thresholded image
 
         if (waitKey(30) == 27) {
-            cout << "esc key is pressed by user" << endl;
+        	file << iLowH << endl;
+        	file << iHighH << endl;
+        	file << iLowS << endl;
+        	file << iHighS << endl;
+        	file << iLowV << endl;
+        	file << iHighV << endl;
+        	file.close();
+            cout << "esc key is pressed by user. Values saved." << endl;
             destroyWindow("Thresholded Image");
             break; 
        }
@@ -85,7 +95,11 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound) {
 //default camera at 0
 int main(int argc, char **argv) {
 	VideoCapture cap;
+	// fstream file("values.txt", ios::in | ios::out | ios::app);
+	ifstream infile;
+	ofstream outfile;
 	deque <Point2f> points;
+	char response[10];
 
 	// Set up camera
 	// change to 0 when on Pascal
@@ -94,14 +108,31 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-
 	Scalar lowerBound = Scalar(40,106,100);
 	Scalar upperBound = Scalar(120,255,255);
 
 	// Scalar lowerBound = Scalar(29, 86, 6);
 	// Scalar upperBound = Scalar(64, 255, 255);
+	cout << "Recalibrate? Y or N: ";
+	cin >> response;
+	tolower(response[0]);
 
-	calibrate(cap, &lowerBound, &upperBound);
+	if (response[0] == 'y') {
+		outfile.open("values.txt");
+		calibrate(cap, &lowerBound, &upperBound, outfile);
+	} else {
+		infile.open("values.txt");
+		string curr_line;
+		int hsvArr[6];
+		int i = 0;
+		while (getline(infile, curr_line)) {
+			hsvArr[i] = atoi(curr_line.c_str());
+			i++;
+		}
+		lowerBound = Scalar(hsvArr[0], hsvArr[2], hsvArr[4]);
+		upperBound = Scalar(hsvArr[1], hsvArr[3], hsvArr[5]);
+	}
+
 
 	// loop to capture and analyze frames
 	while(1) {
@@ -248,41 +279,6 @@ int main(int argc, char **argv) {
 			break;
 		}
 	}
-
-	// loop to capture and analyze frames
-	// while (true) {
-	// 	Mat frame, gray;
-	// 	Vec3f centerPixel = (0, 0);
-	// 	cap.read(frame);
-	// 	if (frame.empty()) {
-	// 		break;
-	// 	}
-	// 	// convert to gray
-	// 	cvtColor(frame, gray, CV_BGR2GRAY);
-	// 	// blur to reduce noise
-	// 	GaussianBlur(gray, gray, Size(9, 9), 2, 2);
-	// 	vector<Vec3f> circles;
-	// 	imshow("gray frame", gray);
-
-	// 	// Hough transform to find circles
-	// 	HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 1, gray.rows/8, 200, 100, 0, 0);
-	// 	// draw circles
-	// 	for (int i = 0; i < circles.size(); i++) {
-	// 		Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-	// 		int radius = cvRound(circles[i][2]);
-	// 		centerPixel = frame.at<Vec3f>(center.x, center.y);
-	// 		circle(frame, center, 3, Scalar(0,255,0), 3, 8, 0);
-	// 		circle(frame, center, radius, Scalar(0,0,255), 3, 8, 0);
-	// 		cout << "Center: " << center << "\nRadius: " << radius << endl;
-	// 	}
-	// 	// imshow not supported on intel boards
-	// 	// comment out when not on Pascal
-	// 	imshow("current frame", frame);
-	// 	// exits loop on "esc" press
-	// 	if (waitKey(30) >= 0) {
-	// 		break;
-	// 	}
-	// }
 
 	cap.release();
 
