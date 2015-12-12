@@ -112,14 +112,16 @@ int main(int argc, char *argv[]) {
         //decode buffer
         decodePacket(buffer, strlen(buffer), size, data, dist_angle, percentSpeed);
         float fdist_angle = 0;
-        float fpercentSpeed = 0;
+        float fpercentSpeed = 0.7;
         if (strcmp(data, "error") == 0) {
             memcpy(data, "stop", 4);
         } else {
-            if (!strcmp(dist_angle, "error"))
+            if (strcmp(dist_angle, "error") != 0) {
                 fdist_angle = atof(dist_angle);
-            if (!strcmp(percentSpeed, "error"))
+            }
+            if (strcmp(percentSpeed, "error") != 0) {
                 fpercentSpeed = atof(percentSpeed);
+            }
         }
 
         if (strcmp(data, "exit") == 0) {
