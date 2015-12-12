@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 
     char *defaultIp;
     int defaultPort;
-
+    
     if (argv[1] == NULL) {
         printf("%s %s %s %d\n", "Using default ip: ", ip, " and default port: ", PORT);
         defaultIp = ip;
