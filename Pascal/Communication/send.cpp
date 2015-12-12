@@ -165,6 +165,9 @@ int main(int argc, char *argv[]) {
         fgets(buffer, 255, stdin);
         memcpy(percentSpeed, buffer, strlen(buffer));
 
+        // call to motionTrack uncomment when using
+        // analyzeVideo();
+
         // create packet 
         char packet[256];
         memset(packet, 0, strlen(packet));
