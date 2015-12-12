@@ -76,10 +76,7 @@ void choppy( char *s ) {
     s[strcspn(s, "\n")] = '\0';
 }
 
-//                                      string          Float               Float
 // packs Message as 0/*sizeOfPacket*//*[drive/turn]*//*[distance/angle]*//*[percentSpeed/DefaultSpeed]*/1
-// need distance percentSpeed angle 
-// Packs Message as 0/*sizeOfPacket*//*idOfSensor*//*data*/1
 void packMessage(char *data, char *dist_angle, char *percentSpeed, char *str) {
     choppy(data);
     choppy(dist_angle);
@@ -98,67 +95,6 @@ void packMessage(char *data, char *dist_angle, char *percentSpeed, char *str) {
     strcat(str, percentSpeed);
     strcat(str, "*/1");
 }
-
-
-
-// void packMessage(char *data, char *dist_angle, char *percentSpeed, char *str) {
-//     // BUG: for some reason, putting itoa(data)
-//     // before itoa(id) causes the data to be erased
-//     // if not inputing from stdin
-//     // char id_s[15];
-//     // itoa(id, id_s);
-//     // choppy(data);
-//     // int bodySize = strlen(data) + strlen(id_s);
-//     // char bodySize_s[20];
-//     // itoa(bodySize, bodySize_s);
-//     choppy(data);
-//     choppy(dist_angle);
-//     choppy(percentSpeed);
-//     int bodySize = strlen(data) + strlen(dist_angle) + strlen(percentSpeed);
-//     char bodySize_s[100];
-//     itoa(bodySize, bodySize_s);
-//     printf("%s\n", percentSpeed);
-
-//     // memset(str, 0, strlen(str));
-//     // strcat(str, "0");
-//     // strcat(str, "/*");
-//     // strcat(str, bodySize_s);
-//     // strcat(str, "*/");
-//     // strcat(str, "/*");
-//     // strcat(str, id_s);
-//     // strcat(str, "*/");
-//     // strcat(str, "/*");
-//     // printf("data: %s\n", data);
-//     // strcat(str, data);
-//     // strcat(str, "*/");
-//     // strcat(str, "1");
-// }
-
-// int main(int argc, char *argv[]) {
-
-//     char buffer[256];
-//     char data[10];
-//     memset(data, 0, 10);
-//     char dist_angle[10];
-//     memset(dist_angle, 0, 10);
-//     char percentSpeed[10];
-//     memset(percentSpeed, 0, 10);
-//     printf("Please enter data: ");
-//     memset(buffer, 0, 256);
-//     fgets(buffer, 255, stdin);
-//     memcpy(data, buffer, strlen(buffer));
-//     printf("Please enter dist/angle: ");
-//     memset(buffer, 0, 256);
-//     fgets(buffer, 255, stdin);
-//     memcpy(dist_angle, buffer, strlen(buffer));
-//     printf("Please enter percent Speed: ");
-//     memset(buffer, 0, 256);
-//     fgets(buffer, 255, stdin);
-//     memcpy(percentSpeed, buffer, strlen(buffer));
-
-//     packMessage(data, dist_angle, percentSpeed, buffer);
-//     printf("%s\n", buffer);
-// }
 
 int main(int argc, char *argv[]) {
     int sockfd, portno, n;
@@ -209,13 +145,6 @@ int main(int argc, char *argv[]) {
     }
 
     while (1) {
-        // for testing, input data
-        // printf("Please enter the message: ");
-        // memset(buffer, 0, 256);
-        // fgets(buffer, 255, stdin);
-
-        // Call analyzeVideo from motionTrack.h
-        // analyzeVideo();
 
         // for testing, input data
         char buffer[256];
@@ -236,18 +165,10 @@ int main(int argc, char *argv[]) {
         fgets(buffer, 255, stdin);
         memcpy(percentSpeed, buffer, strlen(buffer));
 
+        // create packet 
         char packet[256];
         memset(packet, 0, strlen(packet));
         packMessage(data, dist_angle, percentSpeed, packet);
-
-        // int i = atoi(buffer);
-        // create data packet
-        // char temp[256];
-        // packMessage(testID, buffer, temp);
-        // int sizeofPacket = strlen(temp) + 1;
-        // char packet[sizeofPacket];
-        // memset(packet, 0, sizeofPacket);
-        // memcpy(packet, temp, sizeofPacket);
 
         // send data packet
         n = write(sockfd, packet, strlen(packet) + 1);
