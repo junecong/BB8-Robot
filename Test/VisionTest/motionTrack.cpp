@@ -6,8 +6,6 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include "motionTrack.h"
-#include "FSM.h"
 
 #define MAXQUEUESIZE 32
 
@@ -138,6 +136,8 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 		}
 
 		vector<Point> correctContour = contours[contour_index];
+
+		// Approximate polygon curve with specified position
 		approxPolyDP(Mat(correctContour), correctContour, 3, true);
 		minEnclosingCircle((Mat)correctContour, *center, *radius);
 
@@ -162,7 +162,7 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 	}
 }
 
-void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *direction) {
+void detectDirection(Mat *frame, deque <Point2f> points, int pt_size) {
 	int dX = 0;
 	int dY = 0;
 	int x_bias = 20;
@@ -176,16 +176,16 @@ void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *di
 		sprintf(dXdY, "dx: %d dy: %d", dX, dY);
 		if (abs(dX) > x_bias) {
 			if (dX > 0) {
-				*direction = "West";
+				cout << "West" << endl;
 			} else {
-				*direction = "East";
+				cout << "East" << endl;
 			}
 		}
 		if (abs(dY) > y_bias) {
 			if (dY > 0) {
-				*direction = "North";
+				cout << "North" << endl;
 			} else {
-				*direction = "South";
+				cout << "South" << endl;
 			}
 		}
 	}
@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
 
 	// Set up camera
 	// change to 0 when on Pascal
-	if (!cap.open(1)) {
+	if (!cap.open(0)) {
 		cout << "Error detecting camera" << endl;
 		return -1;
 	}
@@ -233,13 +233,17 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	string direction;
+	Point2f center;
+	Point2f prev_center;
+	float prev_radius;
+
 	// loop to capture and analyze frames
 	while(1) {
 		Mat frame, mask;
 		cap.read(frame);
 
 		if (frame.empty()) {
+			cout << "Empty Frame!" << endl;
 			break;
 		}
 
@@ -251,8 +255,21 @@ int main(int argc, char **argv) {
 		findContours(mask.clone(), contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 
 		Moments m;
-		Point2f center;
 		float radius;
+		double dist;
+
+		dist = norm(center - prev_center);
+		string text3 = "distance: " + to_string(dist);
+		cout << text3 << endl;
+
+		prev_center = center;
+		prev_radius = radius;
+		string text = "prev_radius: " + to_string(radius);
+		string text2 = "prev_center: (" + to_string(center.x) + ", " + to_string(center.y) + ")";
+		cout << text << endl;
+		cout << text2 << endl;
+
+
 
 		// detects the object and draws to the frame
 		// gives the center and radius of the object
@@ -269,9 +286,7 @@ int main(int argc, char **argv) {
 		}
 
 		// detects direction of object movement
-		detectDirection(&frame, points, pt_size, &direction);
-
-		MaxwellStatechartTest(direction);
+		detectDirection(&frame, points, pt_size);
 
 		if(pt_size >= MAXQUEUESIZE) {
 			points.pop_front();
