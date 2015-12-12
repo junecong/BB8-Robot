@@ -6,6 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include "motionTrack.h"
 #include "FSM.h"
 
 #define MAXQUEUESIZE 32
