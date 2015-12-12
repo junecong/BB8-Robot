@@ -124,7 +124,7 @@ void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound, ve
 	}
 }
 
-void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, float *radius, bool isObject) {
+void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, float *radius, bool isObject, bool *offscreen) {
 	double largest_area = 0;
 	int contour_index = 0;
 	// if contours exist
@@ -160,9 +160,14 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 					circle(*frame, *center, 3, Scalar(147, 20, 32), 3, 8, 0);
 					circle(*frame, *center, (int)*radius, Scalar(0, 0, 255), 2, 8, 0);
 				}
+				*offscreen = false;
 			} else {
 				circle(*frame, *center, 3, Scalar(255, 101, 255), 3, 8, 0);
 				circle(*frame, *center, (int)*radius, Scalar(79, 167, 64), 2, 8, 0);
+			}
+		} else {
+			if (isObject) {
+				*offscreen = true;
 			}
 		}
 	}
@@ -174,6 +179,8 @@ void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *di
 	int x_bias = 20;
 	int y_bias = 20;
 	char dXdY[50] = "";
+	string latDirection = "";
+	string longDirection = "";
 
 	if (points.size() > 10) {
 		// find change in x and y using points from queue
@@ -182,17 +189,24 @@ void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *di
 		sprintf(dXdY, "dx: %d dy: %d", dX, dY);
 		if (abs(dX) > x_bias) {
 			if (dX > 0) {
-				*direction = "West";
+				latDirection = "West";
 			} else {
-				*direction = "East";
+				latDirection = "East";
 			}
 		}
 		if (abs(dY) > y_bias) {
 			if (dY > 0) {
-				*direction = "North";
+				longDirection = "North";
 			} else {
-				*direction = "South";
+				longDirection = "South";
 			}
+		}
+		if (!longDirection.empty() && !latDirection.empty()) {
+			*direction = longDirection + "-" + latDirection;
+		} else if (!longDirection.empty()){
+			*direction = longDirection;
+		} else if (!latDirection.empty()) {
+			*direction = latDirection;
 		}
 	}
 
@@ -253,9 +267,10 @@ int main(int argc, char **argv) {
 	namedWindow("drawing", WINDOW_NORMAL);
 	resizeWindow("drawing", 600, 600);
 
-	string direction;
 	// loop to capture and analyze frames
 	while(1) {
+		string direction = "Stationary";
+		bool offscreen = true;
 		Mat frame, mask, destMask;
 		cap.read(frame);
 
@@ -283,13 +298,13 @@ int main(int argc, char **argv) {
 		// gives the center and radius of the object
 		Point2f center;
 		float radius;
-		detectObject(&frame, circles, contours, &center, &radius, true); 
+		detectObject(&frame, circles, contours, &center, &radius, true, &offscreen); 
 
 		// detects the destination object and draws to the frame
 		// gives the center and radius of the object
 		Point2f destCenter;
 		float destRadius;
-		detectObject(&frame, destCircles, destContours, &destCenter, &destRadius, false);
+		detectObject(&frame, destCircles, destContours, &destCenter, &destRadius, false, &offscreen);
 
 		int pt_size = points.size();
 
@@ -304,7 +319,24 @@ int main(int argc, char **argv) {
 		// detects direction of object movement
 		detectDirection(&frame, points, pt_size, &direction);
 
-		MaxwellStatechartTest(direction);
+		// need to calculate angle and driveDistance
+		float angle = 0.0;
+		float dx = abs(center.x - destCenter.x);
+		float dy = abs(center.y - destCenter.y);
+		float driveDistance = sqrt(dx*dx + dy*dy);
+
+		MaxwellStatechart (
+			angle, 					// angle
+			driveDistance, 			// distance from object to destination
+			offscreen, 				// if Object is offscreen
+			center.x, 				// x point of Object
+			center.y, 				// y point of Object
+			radius, 				// radius of Object
+			destCenter.x, 			// x point of Destination
+			destCenter.y, 			// y point of Destination
+			destRadius,				// radius of destination
+			direction				// direction object is moving
+		);
 
 		if(pt_size >= MAXQUEUESIZE) {
 			points.pop_front();

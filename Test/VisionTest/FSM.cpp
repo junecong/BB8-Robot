@@ -41,7 +41,18 @@ void MaxwellStatechartTest(string direction) {
 }
 
 
-void MaxwellStatechart(float orientAngle, float driveDistance, bool offscreen, bool start) {
+void MaxwellStatechart (
+	float orientAngle,
+	float driveDistance,
+	bool offscreen,
+	float bbx,
+	float bby,
+	float bbR,
+	float destx,
+	float desty,
+	float destR,
+	string direction1
+	){
 
 	// local state
 	// static bool robotstarted = false;
@@ -52,10 +63,8 @@ void MaxwellStatechart(float orientAngle, float driveDistance, bool offscreen, b
 
 	switch(robotState){
 		case MAXWELL_IDLE:
-			if (start) {
 				// robotstarted = true;
 				robotState = MAXWELL_ORIENT;
-			}
 
 		case MAXWELL_ORIENT:
 			if (offscreen) {
