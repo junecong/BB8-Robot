@@ -6,7 +6,6 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include "motionTrack.h"
 #include "FSM.h"
 
 #define MAXQUEUESIZE 32
@@ -139,6 +138,8 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 		}
 
 		vector<Point> correctContour = contours[contour_index];
+
+		// Approximate polygon curve with specified position
 		approxPolyDP(Mat(correctContour), correctContour, 3, true);
 		minEnclosingCircle((Mat)correctContour, *center, *radius);
 
@@ -248,7 +249,7 @@ int main(int argc, char **argv) {
 
 	// Set up camera
 	// change to 0 when on Pascal
-	if (!cap.open(1)) {
+	if (!cap.open(0)) {
 		cout << "Error detecting camera" << endl;
 		return -1;
 	}
@@ -275,6 +276,7 @@ int main(int argc, char **argv) {
 		cap.read(frame);
 
 		if (frame.empty()) {
+			cout << "Empty Frame!" << endl;
 			break;
 		}
 
@@ -290,6 +292,8 @@ int main(int argc, char **argv) {
 		vector<vector<Point> > contours;
 		findContours(mask.clone(), contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 
+		Moments m;
+
 		// finds Contours for the Destination
 		vector<vector<Point> > destContours;
 		findContours(destMask.clone(), destContours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
@@ -297,6 +301,7 @@ int main(int argc, char **argv) {
 		// detects the object and draws to the frame
 		// gives the center and radius of the object
 		Point2f center;
+		Point2f prev_center = center; 
 		float radius;
 		detectObject(&frame, circles, contours, &center, &radius, true, &offscreen); 
 
