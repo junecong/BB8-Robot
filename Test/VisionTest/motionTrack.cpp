@@ -6,6 +6,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include "motionTrack.h"
+#include "FSM.h"
 
 #define MAXQUEUESIZE 32
 
@@ -160,7 +162,7 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 	}
 }
 
-void detectDirection(Mat *frame, deque <Point2f> points, int pt_size) {
+void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *direction) {
 	int dX = 0;
 	int dY = 0;
 	int x_bias = 20;
@@ -174,16 +176,16 @@ void detectDirection(Mat *frame, deque <Point2f> points, int pt_size) {
 		sprintf(dXdY, "dx: %d dy: %d", dX, dY);
 		if (abs(dX) > x_bias) {
 			if (dX > 0) {
-				cout << "West" << endl;
+				*direction = "West";
 			} else {
-				cout << "East" << endl;
+				*direction = "East";
 			}
 		}
 		if (abs(dY) > y_bias) {
 			if (dY > 0) {
-				cout << "North" << endl;
+				*direction = "North";
 			} else {
-				cout << "South" << endl;
+				*direction = "South";
 			}
 		}
 	}
@@ -231,7 +233,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-
+	string direction;
 	// loop to capture and analyze frames
 	while(1) {
 		Mat frame, mask;
@@ -267,7 +269,9 @@ int main(int argc, char **argv) {
 		}
 
 		// detects direction of object movement
-		detectDirection(&frame, points, pt_size);
+		detectDirection(&frame, points, pt_size, &direction);
+
+		MaxwellStatechartTest(direction);
 
 		if(pt_size >= MAXQUEUESIZE) {
 			points.pop_front();
