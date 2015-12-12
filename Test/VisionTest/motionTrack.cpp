@@ -15,7 +15,8 @@ using namespace std;
 // calibrate HSV values and save in output file for later use
 void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstream &file) {
 
-    namedWindow("Control", CV_WINDOW_AUTOSIZE); //create a window called "Control"
+    namedWindow("Control", WINDOW_NORMAL); //create a window called "Control"
+    resizeWindow("Control", 300, 100);
 	// start calibration
 	int iLowH = 0;
 	int iHighH = 179;
@@ -35,9 +36,8 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
 	createTrackbar("LowV", "Control", &iLowV, 255);
 	createTrackbar("HighV", "Control", &iHighV, 255);
 
-	Mat imgTmp;
-
-	cap.read(imgTmp);
+	namedWindow("Thresholded Image", WINDOW_NORMAL);
+	resizeWindow("Thresholded Image", 600, 600);
 
     while (true) {
         Mat imgOriginal;
@@ -83,45 +83,46 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
     }
 }
 
-void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound, vector<Vec3f> circles) {
-		Mat gray, blur, hsv_frame;
-		// imshow not supported on intel edison boards
-		// comment out when uploading to board
-		// imshow("original frame", frame);
-		GaussianBlur(*frame, blur, Size(11,11), 0, 0);
-		cvtColor(blur, hsv_frame, CV_BGR2HSV);
-		// imshow("hsv image", hsv_frame);
+void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound, vector<Vec3f> circles, bool isObject) {
+	Mat gray, blur, hsv_frame;
+	// imshow not supported on intel edison boards
+	// comment out when uploading to board
+	// imshow("original frame", frame);
+	GaussianBlur(*frame, blur, Size(11,11), 0, 0);
+	cvtColor(blur, hsv_frame, CV_BGR2HSV);
+	// imshow("hsv image", hsv_frame);
 
-		inRange(hsv_frame, lowerBound, upperBound, *mask);
+	inRange(hsv_frame, lowerBound, upperBound, *mask);
 
-		// imshow("mask1", mask);
-		// Create a structuring element
-	    // int erosion_size = 6;  
-     	// Mat element = getStructuringElement(cv::MORPH_CROSS,
-     	//     cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
-     	//     cv::Point(erosion_size, erosion_size) );
-		// erode(mask, mask, element, Point(-1,-1), 2);
-		// dilate(mask, mask, element, Point(-1,-1), 2);
+	// imshow("mask1", mask);
+	// Create a structuring element
+    // int erosion_size = 6;  
+ 	// Mat element = getStructuringElement(cv::MORPH_CROSS,
+ 	//     cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
+ 	//     cv::Point(erosion_size, erosion_size) );
+	// erode(mask, mask, element, Point(-1,-1), 2);
+	// dilate(mask, mask, element, Point(-1,-1), 2);
 
-	    //morphological opening (removes small objects from the foreground)
-	    erode(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
-	    dilate(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
+    //morphological opening (removes small objects from the foreground)
+    erode(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
+    dilate(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
 
-	    //morphological closing (removes small holes from the foreground)
-	    dilate(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
-	    erode(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
+    //morphological closing (removes small holes from the foreground)
+    dilate(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
+    erode(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
 
-		// imshow("mask2", mask);
-
+	// imshow("mask2", mask);
+    if (isObject) {
 		cvtColor(blur, gray, CV_BGR2GRAY);
 		// imshow("gray", gray);
 		GaussianBlur(*mask, *mask, Size(9,9), 0, 0);
 		// imshow("blur mask", mask);
 		// play around with HoughCircle parameters to get better circle detection
 		HoughCircles(*mask, circles, CV_HOUGH_GRADIENT, 2, 15, 200, 80, 0, 0);
+	}
 }
 
-void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, float *radius) {
+void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, float *radius, bool isObject) {
 	double largest_area = 0;
 	int contour_index = 0;
 	// if contours exist
@@ -144,19 +145,24 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 		int bias = 10;
 
 		if (*radius > 10) {
-			if (circles.size() > 0) {
-				// for sure this is the object we are looking for
-				for (int i = 0; i < circles.size(); i++) {
-					Point circleCenter = Point(cvRound(circles[i][0]), cvRound(circles[i][1]));
-					if (abs(circleCenter.x - (*center).x) < bias && abs(circleCenter.y - (*center).y) < bias) {
-						circle(*frame, *center, 3, Scalar(139, 100, 54), 3, 8, 0);
-						circle(*frame, *center, (int)*radius, Scalar(0, 255, 0), 2, 8, 0);
+			if (isObject) {
+				if (circles.size() > 0) {
+					// for sure this is the object we are looking for
+					for (int i = 0; i < circles.size(); i++) {
+						Point circleCenter = Point(cvRound(circles[i][0]), cvRound(circles[i][1]));
+						if (abs(circleCenter.x - (*center).x) < bias && abs(circleCenter.y - (*center).y) < bias) {
+							circle(*frame, *center, 3, Scalar(139, 100, 54), 3, 8, 0);
+							circle(*frame, *center, (int)*radius, Scalar(0, 255, 0), 2, 8, 0);
+						}
 					}
+				} else {
+					// might not be object we're looking for
+					circle(*frame, *center, 3, Scalar(147, 20, 32), 3, 8, 0);
+					circle(*frame, *center, (int)*radius, Scalar(0, 0, 255), 2, 8, 0);
 				}
 			} else {
-				// might not be object we're looking for
-				circle(*frame, *center, 3, Scalar(147, 20, 255), 3, 8, 0);
-				circle(*frame, *center, (int)*radius, Scalar(0, 0, 255), 2, 8, 0);
+				circle(*frame, *center, 3, Scalar(255, 101, 255), 3, 8, 0);
+				circle(*frame, *center, (int)*radius, Scalar(79, 167, 64), 2, 8, 0);
 			}
 		}
 	}
@@ -193,33 +199,34 @@ void detectDirection(Mat *frame, deque <Point2f> points, int pt_size) {
 	putText(*frame, dXdY, Point(10, 450), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
 }
 
-//default camera at 0
-int main(int argc, char **argv) {
-	VideoCapture cap;
+void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *fileName) {
 	ifstream infile;
 	ofstream outfile;
-	deque <Point2f> points;
 	char response[10];
 
-	// Set up camera
-	// change to 0 when on Pascal
-	if (!cap.open(0)) {
-		cout << "Error detecting camera" << endl;
-		return -1;
-	}
+// <<<<<<< HEAD
+// 	// Set up camera
+// 	// change to 0 when on Pascal
+// 	if (!cap.open(0)) {
+// 		cout << "Error detecting camera" << endl;
+// 		return -1;
+// 	}
 
-	Scalar lowerBound = Scalar(0,0,0);
-	Scalar upperBound = Scalar(120,255,255);
+// 	Scalar lowerBound = Scalar(0,0,0);
+// 	Scalar upperBound = Scalar(120,255,255);
 
-	cout << "Recalibrate? Y or N: ";
+// 	cout << "Recalibrate? Y or N: ";
+// =======
+	cout << "Recalibrate for "<< fileName << " ? y or n: ";
+// >>>>>>> a61ed3516c2580a5c1a456249ade89a480c00d96
 	cin >> response;
-	tolower(response[0]);
+	response[0] = tolower(response[0]);
 
 	if (response[0] == 'y') {
-		outfile.open("values.txt");
-		calibrate(cap, &lowerBound, &upperBound, outfile);
+		outfile.open(fileName);
+		calibrate(cap, lowerBound, upperBound, outfile);
 	} else {
-		infile.open("values.txt");
+		infile.open(fileName);
 		string curr_line;
 		int hsvArr[6];
 		int i = 0;
@@ -228,10 +235,37 @@ int main(int argc, char **argv) {
 			i++;
 		}
 		if (i > 5) {
-			lowerBound = Scalar(hsvArr[0], hsvArr[2], hsvArr[4]);
-			upperBound = Scalar(hsvArr[1], hsvArr[3], hsvArr[5]);
+			*lowerBound = Scalar(hsvArr[0], hsvArr[2], hsvArr[4]);
+			*upperBound = Scalar(hsvArr[1], hsvArr[3], hsvArr[5]);
 		}
 	}
+}
+
+//default camera at 0
+int main(int argc, char **argv) {
+	VideoCapture cap;
+	deque <Point2f> points;
+
+	// Set up camera
+	// change to 0 when on Pascal
+	if (!cap.open(1)) {
+		cout << "Error detecting camera" << endl;
+		return -1;
+	}
+
+	Scalar lowerBoundObject = Scalar(0, 0, 0);
+	Scalar upperBoundObject = Scalar(120, 255, 255);
+
+	Scalar lowerBoundDest = Scalar(0, 0, 0);
+	Scalar upperBoundDest = Scalar(120, 255, 255);
+
+	// for calibrating Object
+	userInput(cap, &lowerBoundObject, &upperBoundObject, "Object-HSV.txt");
+	// for calibrating Destination
+	userInput(cap, &lowerBoundDest, &upperBoundDest, "Destination-HSV.txt");
+
+	namedWindow("drawing", WINDOW_NORMAL);
+	resizeWindow("drawing", 600, 600);
 
 	Point2f center;
 	Point2f prev_center;
@@ -239,7 +273,7 @@ int main(int argc, char **argv) {
 
 	// loop to capture and analyze frames
 	while(1) {
-		Mat frame, mask;
+		Mat frame, mask, destMask;
 		cap.read(frame);
 
 		if (frame.empty()) {
@@ -247,16 +281,32 @@ int main(int argc, char **argv) {
 			break;
 		}
 
-		// creates a mask from HSV values and circle detection
+		// creates a mask from HSV values and circle detection for the object
 		vector<Vec3f> circles;
-		filterImage(&frame, &mask, lowerBound, upperBound, circles);
+		filterImage(&frame, &mask, lowerBoundObject, upperBoundObject, circles, true);
 
+		// creates a mask from HSV values and circle detection for the destination
+		vector<Vec3f> destCircles;
+		filterImage(&frame, &destMask, lowerBoundDest, upperBoundDest, destCircles, false);
+
+		// finds Contours for the Object
 		vector<vector<Point> > contours;
 		findContours(mask.clone(), contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 
 		Moments m;
+
+		// finds Contours for the Destination
+		vector<vector<Point> > destContours;
+		findContours(destMask.clone(), destContours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+
+		// detects the object and draws to the frame
+		// gives the center and radius of the object
+		Point2f center;
+		Point2f prev_center = center; 
 		float radius;
 		double dist;
+
+		detectObject(&frame, circles, contours, &center, &radius, true); 
 
 		dist = norm(center - prev_center);
 		string text3 = "distance: " + to_string(dist);
@@ -270,10 +320,11 @@ int main(int argc, char **argv) {
 		cout << text2 << endl;
 
 
-
-		// detects the object and draws to the frame
+		// detects the destination object and draws to the frame
 		// gives the center and radius of the object
-		detectObject(&frame, circles, contours, &center, &radius); 
+		Point2f destCenter;
+		float destRadius;
+		detectObject(&frame, destCircles, destContours, &destCenter, &destRadius, false);
 
 		int pt_size = points.size();
 
