@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
 
 	// Set up camera
 	// change to 0 when on Pascal
-	if (!cap.open(1)) {
+	if (!cap.open(0)) {
 		cout << "Error detecting camera" << endl;
 		return -1;
 	}
