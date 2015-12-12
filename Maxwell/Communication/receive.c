@@ -31,17 +31,18 @@ void getString (char *packet, char data[], int *index) {
 
     // check if data exists
     if (data[0] == '\0') {
-        data = "error";
+        memcpy(data, "error", 5);
     }
 }
 
 // Decodes received message and puts them into the respective char array
-void decodePacket(char *packet, int len, char size[], char id[], char data[]) {
+void decodePacket(char *packet, int len, char size[], char data[], char dist_angle[], char percentSpeed[]) {
     if (packet[0] == '0' && packet[len-1] == '1') {
         int index = 3;
         getString(packet, size, &index);
-        getString(packet, id, &index);
         getString(packet, data, &index);
+        getString(packet, dist_angle, &index);
+        getString(packet, percentSpeed, &index);
     } else {
         printf("%s\n", "segmented packet: Incorrect Start and End");
     }
@@ -55,8 +56,9 @@ int main(int argc, char *argv[]) {
     int n;
 
     char size[10];
-    char id[10];
     char data[20];
+    char dist_angle[10];
+    char percentSpeed[10];
 
     int defaultPort;
     if (argc < 2) {
@@ -92,8 +94,9 @@ int main(int argc, char *argv[]) {
 
     while (1) {
         memset(size, 0, 10);
-        memset(id, 0, 10);
         memset(data, 0, 20);
+        memset(dist_angle, 0, 10);
+        memset(percentSpeed, 0, 10);
         memset(buffer, 0, 256);
 
         // read data
@@ -107,15 +110,27 @@ int main(int argc, char *argv[]) {
         printf("Here is the message: %s\n", buffer);
 
         //decode buffer
-        decodePacket(buffer, strlen(buffer), size, id, data);
+        decodePacket(buffer, strlen(buffer), size, data, dist_angle, percentSpeed);
+        float fdist_angle = 0;
+        float fpercentSpeed = 0;
+        if (strcmp(data, "error") == 0) {
+            memcpy(data, "stop", 4);
+        } else {
+            if (!strcmp(dist_angle, "error"))
+                fdist_angle = atof(dist_angle);
+            if (!strcmp(percentSpeed, "error"))
+                fpercentSpeed = atof(percentSpeed);
+        }
 
         if (strcmp(data, "exit") == 0) {
             n = write(newsockfd, "done", 5);
-            move("stop", 50);
+            move("stop", 0, 0);
+            // move("stop", 50);
             break;
         } else {
             // call to drive motors in Servo/motorControl.cpp
-            move(data, 50);
+            move(data, fdist_angle, fpercentSpeed);
+            // move(data, 50);
             n = write(newsockfd, "I got your message", 18);
         }
 

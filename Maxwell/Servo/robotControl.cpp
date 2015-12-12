@@ -1,5 +1,6 @@
 // #include "motorControl.h"
 #include <thread>
+#include <future>
 #include <chrono>
 #include <math.h>
 #include <iostream>
@@ -70,43 +71,78 @@ int startMotors (libusb_device_handle *handle, float speed) {
 int motorOneDirection (libusb_device_handle *handle, float rSpeed, float lSpeed) {
 	int r;
 	// Assumed 4 servos
-	r = libusb_control_transfer( handle,
+	std::thread t2 (libusb_control_transfer, handle,
 				0x40,	  //request type
 				0x85,	  //request
 				4*rSpeed,  //speed/value
 				0,		  //servo number
 				NULL,
 				0,
-				5000);
-	if (r < 0) {
-		cout << "Error starting motor " << 0 << endl;
-		return -1;
-	}
-	r = libusb_control_transfer( handle,
+				5000).join();
+	// auto f1 = std::async(libusb_control_transfer, handle,
+	// 			0x40,	  //request type
+	// 			0x85,	  //request
+	// 			4*rSpeed,  //speed/value
+	// 			0,		  //servo number
+	// 			NULL,
+	// 			0,
+	// 			5000);
+	// r = libusb_control_transfer( handle,
+	// 			0x40,	  //request type
+	// 			0x85,	  //request
+	// 			4*rSpeed,  //speed/value
+	// 			0,		  //servo number
+	// 			NULL,
+	// 			0,
+	// 			5000);
+	// r = f1.get()
+	// if (r < 0) {
+	// 	cout << "Error starting motor " << 0 << endl;
+	// 	return -1;
+	// }
+	std::thread t3 (libusb_control_transfer, handle,
 				0x40,	  //request type
 				0x85,	  //request
-				4*lSpeed,  //speed/value
-				4,		  //servo number
+				4*rSpeed,  //speed/value
+				0,		  //servo number
 				NULL,
 				0,
-				5000);
-	if (r < 0) {
-		cout << "Error starting motor " << 2 << endl;
-		return -1;
-	}
-
-	return r;
-
+				5000).join();
+	// auto f2 = std::async((libusb_control_transfer, handle,
+	// 			0x40,	  //request type
+	// 			0x85,	  //request
+	// 			4*lSpeed,  //speed/value
+	// 			4,		  //servo number
+	// 			NULL,
+	// 			0,
+	// 			5000);
+	// r = libusb_control_transfer( handle,
+	// 			0x40,	  //request type
+	// 			0x85,	  //request
+	// 			4*lSpeed,  //speed/value
+	// 			4,		  //servo number
+	// 			NULL,
+	// 			0,
+	// 			5000);
+	// r = f2.get()
+	// if (r < 0) {
+	// 	cout << "Error starting motor " << 2 << endl;
+	// 	return -1;
+	// }
+	// t2.join();
+	// t3.join();
+	// return r;
+	return 0;
 }
 
 // Two-Wheel method
-int motorTurn (libusb_device_handle *handle, float speed) {
+int motorTurn (libusb_device_handle *handle, float rSpeed, float lSpeed) {
 	int r;
 	// Assumed 4 servos
 	r = libusb_control_transfer( handle,
 				0x40,	  //request type
 				0x85,	  //request
-				4*speed,  //speed/value
+				4*rSpeed, //speed/value
 				0,		  //servo number
 				NULL,
 				0,
@@ -118,7 +154,7 @@ int motorTurn (libusb_device_handle *handle, float speed) {
 	r = libusb_control_transfer( handle,
 				0x40,	  //request type
 				0x85,	  //request
-				4*speed,  //speed/value
+				4*lSpeed, //speed/value
 				4,		  //servo number
 				NULL,
 				0,
@@ -166,18 +202,24 @@ int turn(libusb_device_handle *handle, int angle) {
 	cout << "norm_angle, " << norm_angle << "\n";
 
 	float percentSpeed = 450 * 0.5;
-	int speed = 0;
+	int lSpeed = 0;
+	int rSpeed = 0;
+	int timer = 0;
 	if (norm_angle > 0){
-		speed = 1490 + percentSpeed;
+		rSpeed = 1490 + percentSpeed;
+		lSpeed = 1490 + percentSpeed;
+		timer = (fabs(norm_angle) / 360) * 1.975 * 1000;
 	} else {
-		speed = 1490 - percentSpeed;
+		rSpeed = 1490 - percentSpeed;
+		lSpeed = 1490 - percentSpeed;
+		timer = (fabs(norm_angle) / 360) * 2.2 * 1000;
+
 	}
 
-	int timer = (fabs(norm_angle) / 360) * 2.2 * 1000;
 	cout << "timer, " << timer << "\n";
 
-	motorTurn(handle, speed);
-	std::thread t1 (pause_thread,timer);
+	motorTurn(handle, rSpeed, lSpeed);
+	std::thread t1 (pause_thread, timer);
 	t1.join();
 	startMotors(handle, 0);
 
@@ -193,23 +235,27 @@ int turn(libusb_device_handle *handle, int angle) {
 // - handle: used for communication with
 // USB devices
 // - distance: distance to travel in cm
-int drive(libusb_device_handle *handle, float distance) {
+int drive(libusb_device_handle *handle, float distance, float percent) {
 
-	float percentSpeed = 450 * 0.5;
+	float percentSpeed = 450 * percent;
 	int lSpeed = 0;
 	int rSpeed = 0;
 	if (distance > 0){
-		lSpeed = 1490 + percentSpeed;
-		rSpeed = 1490 - percentSpeed;
+		lSpeed = 1470 + percentSpeed;
+		// No Weight
+		// rSpeed = 1445 - percentSpeed;
+		rSpeed = 1405 - percentSpeed;
 	} else {
-		lSpeed = 1490 - percentSpeed;
-		rSpeed = 1490 + percentSpeed;
+		lSpeed = 1500 - percentSpeed;
+		// No Weight
+		// rSpeed = 1510 + percentSpeed;
+		rSpeed = 1530 + percentSpeed;
 	}
 
 	int timer = (fabs(distance) / 30.5) * 2.65 * 1000;
 
 	motorOneDirection(handle, lSpeed, rSpeed);
-	std::thread t1 (pause_thread,timer);
+	std::thread t1 (pause_thread, timer);
 	t1.join();
 	startMotors(handle, 0);
 
@@ -225,6 +271,12 @@ int main(int argc, char *argv[]) {
 	char *action = argv[1];
 
 	int speedInput = atoi(argv[2]);
+
+	int percent = 0.7;
+
+	if (argc > 3){
+		percent = atof(argv[3]);
+	}
 
 	// if (speedInput < 0 || speedInput > 100) {
 	// 	cout << "Speed must be between 0-100" << endl;
@@ -275,11 +327,11 @@ int main(int argc, char *argv[]) {
 		lSpeed = 1490 - percentSpeed;
 		motorOneDirection(handle, rSpeed, lSpeed);
 	} else if (strcmp(action, "right") == 0) {
-		int speed = 1490 + percentSpeed;
-		motorTurn(handle, speed);
+		// int speed = 1490 + percentSpeed;
+		motorTurn(handle, rSpeed, lSpeed);
 	} else if (strcmp(action, "left") == 0) {
-		int speed = 1490 - percentSpeed;
-		motorTurn(handle, speed);
+		// int speed = 1490 - percentSpeed;
+		motorTurn(handle, rSpeed, lSpeed);
 	} else if (strcmp(action, "stop") == 0) {
 		startMotors(handle, 0);	
 	} else if (strcmp(action, "turn") == 0) {
@@ -287,7 +339,7 @@ int main(int argc, char *argv[]) {
 		turn(handle, speedInput);
 	} else if (strcmp(action, "drive") == 0) {
 		// float dist = 30.5;
-		drive(handle, speedInput);
+		drive(handle, speedInput, percent);
 	} else {
 		cout << "invalid string" << endl;
 	}

@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 2.8)
+project(run)
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/libs)
+
+add_library(FSM Vision/FSM.cpp)
+add_library(TRACK Vision/motionTrack.cpp)
+add_executable(sendToBB8 Communication/send.cpp)
+
+target_link_libraries(TRACK ${OpenCV_LIBS} FSM)
+target_link_libraries(sendToBB8 TRACK)
