@@ -16,10 +16,11 @@ typedef enum {
 	MAXWELL_OFFSCREEN,
 	MAXWELL_RIGHT,
 	MAXWELL_LEFT,
+	MAXWELL_DONE
 } robotState_t;
 
 typedef enum {
-	ORIENT_IDLE = 7,
+	ORIENT_IDLE = 8,
 	ORIENT_INITIAL_FORWARD,
 	// ORIENT_INITIAL_BACKWARD,
 	ORIENT_INITIAL_RIGHT,
@@ -111,6 +112,8 @@ void MaxwellStatechart(float orientAngle, float driveDistance, bool offscreen, b
 		case MAXWELL_LEFT:
 
 		case MAXWELL_RIGHT:
+
+		case MAXWELL_DONE:
 			
 		break;
 	}
