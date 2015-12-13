@@ -49,9 +49,9 @@ float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx,
 	float oldDestVector[] = {destx-ogBBx, -(desty-ogBBy)};
 	float newDestVector[] = {destx-newBBx, -(desty-newBBy)};
 
-	cout << "oldNewVector: " << oldNewVector[0] <<  ", " << oldNewVector[1] << endl;
-	cout << "oldDestVector: " << newDestVector[0] <<  ", " << newDestVector[1] << endl;
-	cout << "newDestVector: " << newDestVector[0] << ", " << newDestVector[1] << endl;
+	// cout << "oldNewVector: " << oldNewVector[0] <<  ", " << oldNewVector[1] << endl;
+	// cout << "oldDestVector: " << newDestVector[0] <<  ", " << newDestVector[1] << endl;
+	// cout << "newDestVector: " << newDestVector[0] << ", " << newDestVector[1] << endl;
 
 	float num = (oldNewVector[0] * newDestVector[0]) + (oldNewVector[1] * newDestVector[1]);
 	float denom = sqrt(pow(oldNewVector[0],2) + pow(oldNewVector[1],2)) * sqrt(pow(newDestVector[0],2) + pow(newDestVector[1],2));
@@ -60,7 +60,6 @@ float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx,
 	angleDegree = (angleRad *180)/M_PI ;
 
 	turn = (oldNewVector[0]*oldDestVector[1]) - (oldNewVector[1]*oldDestVector[0]);
-	cout << "Turn: " << turn << endl;
 	if (turn > 0) {
 		angleDegree = -angleDegree;
 	} 
