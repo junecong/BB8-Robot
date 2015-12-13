@@ -5,7 +5,8 @@
 #include <iostream>
 #include <math.h>       /* floor */
 #include "FSM.h"
-// #include <numeric>
+
+#include <time.h>
 // #include <cmath>
 
 using namespace std;
@@ -84,7 +85,6 @@ void MaxwellStatechart(float driveDistance,
 	// local state
 	static robotState_t robotState = MAXWELL_IDLE;
 	static subState_t subState = ORIENT_IDLE;
-	// static bool forward = true; //TRUE means driving forwards
 
 	static float ogBBx;
 	static float ogBBy;
@@ -101,17 +101,19 @@ void MaxwellStatechart(float driveDistance,
 
 	switch(robotState){
 		case MAXWELL_IDLE:
-			// if (start) {
+			cout << "MAXWELL_IDLE" << endl;
 				robotState = MAXWELL_ORIENT;
-			// }
+			break;
 
 		case MAXWELL_ORIENT:
+			cout << "MAXWELL_ORIENT" << endl;
 			if (offscreen) {
 				//TODO: Improve this
 				robotState = MAXWELL_OFFSCREEN; 
 			}
 			switch(subState){
 				case ORIENT_IDLE:
+					cout << "ORIENT_IDLE" << endl;
 					ogBBx = bbx;
 					ogBBy = bby;
 					ogBBRad = bbR;
@@ -119,80 +121,73 @@ void MaxwellStatechart(float driveDistance,
 					dest_y_var = destx;
 					dest_rad_var = destR;
 					subState = ORIENT_INITIAL_FORWARD;
+					break;
 
 				case ORIENT_INITIAL_FORWARD:
+					cout << "ORIENT_INITIAL_FORWARD" << endl;
 					output[0] = "drive";
 					output[1] = "25";
 					output[2] = speed;
-					if (direction == "stablized") {
+					if (direction == "Stationary") {
 						subState = ORIENT_AWAITING;
 					}
+					break;
 					
 				case ORIENT_AWAITING:
+					cout << "ORIENT_AWAITING" << endl;
 					newBBx = bbx;
 					newBBy = bby;
 					newBBRad = bbR;
 					subState = ORIENT_FINISHED;
+					break;
 
 				case ORIENT_FINISHED:	
+					cout << "ORIENT_FINISHED" << endl;
 					degreeToTurn = orient (ogBBx, ogBBy, newBBx, newBBy, dest_x_var, dest_y_var); 
 					robotState = MAXWELL_TURN;
 					subState = ORIENT_IDLE;
 				break;
 			}
+			break;
 		case MAXWELL_TURN:
+			cout << "MAXWELL_TURN" << endl;
 			// TODO: Ask minh if turning == stabilized
 			output[0] = "turn";
 			output[1] = to_string(degreeToTurn);
 			output[2] = speed;
-			sleep(5000);
+			// _sleep(5000);
 			robotState = MAXWELL_DRIVE;
+			break;
 
 		case MAXWELL_DRIVE:
+			cout << "MAXWELL_DRIVE" << endl;
 			// forward = true; //you're currently driving forwards
 			output[0] = "drive";
 			output[1] = to_string(driveDistance);
 			output[2] = speed;
-			if (direction == "stablized") {
+			if (direction == "Stationary") {
 				robotState = MAXWELL_ORIENT;
 			}
 			if (offscreen) {
 				robotState = MAXWELL_OFFSCREEN;
 			}
-			if (driveDistance <= 10) {
+			if (driveDistance == 0) {
 				robotState = MAXWELL_DONE;
 			} 
+			break;
 
 		case MAXWELL_OFFSCREEN:
+			cout << "MAXWELL_OFFSCREEN" << endl;
 			output[0] = "drive";
 			output[1] = "-25";
 			output[2] = speed;
 			robotState = MAXWELL_ORIENT;
+			break;
 
 		case MAXWELL_DONE:
-			cout << "Destination Reached" << endl;
+			cout << "MAXWELL_DONE" << endl;
 
 		break;
 	}
-}
-
-
-int main(int argc, char **argv) {
-	// // return orientation(10.2, 12.5, 16.2);
-	// orient (50, 100, 100, 50, 10, 10); //negative
-
-	// // orient (10, 100, 10, 50, 10, 10); //0
-
-	// orient (0, 100, 0, 50, 10, 10); //positive
-
-	// // orient (0, 10, 0, 0, 10, 10); //positive
-
-	// orient (0, 3, 2, 0, 2, 1); //positive
-
-	orient (0, 3, 2, 0, 2, 1); //positive
-
-	orient (0, 3, 2, 1, 2, 0); //negative
-
-	return 1;
 }
 
