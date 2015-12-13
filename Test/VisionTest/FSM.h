@@ -1,5 +1,5 @@
-#ifndef FSM_H
-#define FSM_H
+#ifndef FSM
+#define FSM
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,16 +9,14 @@ using namespace std;
 
 int test();
 void MaxwellStatechartTest(string direction);
-void MaxwellStatechart (
-	float orientAngle,
-	float driveDistance,
-	bool offscreen,
+float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx, float desty);
+void MaxwellStatechart(float driveDistance, 
+	bool offscreen, 
 	float bbx,
 	float bby,
 	float bbR,
 	float destx,
 	float desty,
 	float destR,
-	string direction1
-	);
+	string direction, string output[]);
 #endif
