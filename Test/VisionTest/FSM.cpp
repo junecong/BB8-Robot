@@ -145,7 +145,7 @@ void MaxwellStatechart(float driveDistance,
 					degreeToTurn = orient (ogBBx, ogBBy, newBBx, newBBy, dest_x_var, dest_y_var); 
 					robotState = MAXWELL_TURN;
 					subState = ORIENT_IDLE;
-				break;
+					break;
 			}
 			break;
 		case MAXWELL_TURN:
@@ -170,17 +170,21 @@ void MaxwellStatechart(float driveDistance,
 			if (offscreen) {
 				robotState = MAXWELL_OFFSCREEN;
 			}
-			if (driveDistance == 0) {
+			if (driveDistance <= 10) {
 				robotState = MAXWELL_DONE;
 			} 
 			break;
 
 		case MAXWELL_OFFSCREEN:
 			cout << "MAXWELL_OFFSCREEN" << endl;
-			output[0] = "drive";
-			output[1] = "-25";
-			output[2] = speed;
-			robotState = MAXWELL_ORIENT;
+			// robotState = MAXWELL_ORIENT;
+			if (!offscreen) {
+				robotState = MAXWELL_ORIENT;
+			} else {
+				output[0] = "drive";
+				output[1] = "-25";
+				output[2] = speed;
+			}
 			break;
 
 		case MAXWELL_DONE:
