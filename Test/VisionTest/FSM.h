@@ -1,5 +1,5 @@
-#ifndef FSM
-#define FSM
+#ifndef FSM_H
+#define FSM_H
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
