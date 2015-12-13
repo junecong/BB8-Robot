@@ -42,7 +42,6 @@ void MaxwellStatechartTest(string direction) {
 
 
 void MaxwellStatechart (
-	float orientAngle,
 	float driveDistance,
 	bool offscreen,
 	float bbx,
@@ -51,7 +50,8 @@ void MaxwellStatechart (
 	float destx,
 	float desty,
 	float destR,
-	string direction1
+	string direction1,
+	string output[]
 	){
 
 	// local state

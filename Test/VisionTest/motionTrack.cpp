@@ -400,8 +400,9 @@ int main(int argc, char **argv) {
 			cout << endl;
 		}
 
-		MaxwellStatechart (
-			angle, 					// angle
+		string output[3];
+
+		MaxwellStatechart(
 			driveDistance, 			// distance from object to destination
 			isOffscreen, 			// if Object is isOffscreen
 			avgCenterPoint.x, 		// x point of Object
@@ -410,7 +411,8 @@ int main(int argc, char **argv) {
 			avgDestPoint.x, 		// x point of Destination
 			avgDestPoint.y, 		// y point of Destination
 			avgDestRadius,			// radius of destination
-			direction				// direction object is moving
+			direction,				// direction object is moving
+			output					// output 
 		);
 
 		// pop points queue
