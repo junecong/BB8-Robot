@@ -157,18 +157,24 @@ void setUpSocket(char *argv1, char *argv2) {
         memset(percentSpeed, 0, strlen(percentSpeed));
 
         // lock and wait for message from FSM
-        unique_lock<std::mutex> lck(msg_mutex);
-        while (!messageReady) {
-            no_message.wait(lck);
-        }
+        // unique_lock<std::mutex> lck(msg_mutex);
+        // while (!messageReady) {
+        //     no_message.wait(lck);
+        // }
+
+        while (!messageReady);
+
+        cout << "output from analyzeVideo: " << FSM_message[0] << ", " << FSM_message[1] << ", " << FSM_message[2] << endl;
 
         // create packet 
         FSM_message[0].copy(data, FSM_message[0].size());
         FSM_message[1].copy(dist_angle, FSM_message[1].size());
         FSM_message[2].copy(percentSpeed, FSM_message[2].size());
+        cout << "output after storing to arrays: " << FSM_message[0] << ", " << FSM_message[1] << ", " << FSM_message[2] << endl;
         char packet[256];
         memset(packet, 0, strlen(packet));
         packMessage(data, dist_angle, percentSpeed, packet);
+        cout << "output from packMessage: " << packet << endl;
 
         // send data packet
         n = write(sockfd, packet, strlen(packet) + 1);
@@ -179,6 +185,8 @@ void setUpSocket(char *argv1, char *argv2) {
 
         memset(buffer, 0, 256);
         n = read(sockfd, buffer, 255);
+
+        cout << buffer << endl;
 
         if (n < 0) {
             error("ERROR reading from socket");

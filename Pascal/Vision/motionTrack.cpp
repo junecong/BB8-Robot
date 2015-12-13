@@ -438,7 +438,7 @@ int analyzeVideo(string output[]) {
 		}
 
 		// lock mutex to construct message from FSM
-		unique_lock<std::mutex> lck(msg_mutex);
+		// lock_guard<std::mutex> lck(msg_mutex);
 		MaxwellStatechart(
 			driveDistance, 			// distance from object to destination
 			isOffscreen, 			// if Object is isOffscreen
@@ -452,10 +452,12 @@ int analyzeVideo(string output[]) {
 			output					// output message
 		);
 
+		cout << "output from motionTrack: "<< output[0] << ", " << output[1] << ", "<< output[2] << endl;
+
 
 		// signal main thread that message is done
 		messageReady = true;
-		no_message.notify_one();
+		// no_message.notify_one();
 
 		// pop object point queue
 		if (obPt_size >= MAXQUEUESIZE) {
