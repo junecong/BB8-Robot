@@ -128,7 +128,7 @@ void MaxwellStatechart(float driveDistance,
 					output[0] = "drive";
 					output[1] = "25";
 					output[2] = speed;
-					if (direction == "stablized") {
+					if (direction == "Stationary") {
 						subState = ORIENT_AWAITING;
 					}
 					break;
@@ -165,7 +165,7 @@ void MaxwellStatechart(float driveDistance,
 			output[0] = "drive";
 			output[1] = to_string(driveDistance);
 			output[2] = speed;
-			if (direction == "stablized") {
+			if (direction == "Stationary") {
 				robotState = MAXWELL_ORIENT;
 			}
 			if (offscreen) {
