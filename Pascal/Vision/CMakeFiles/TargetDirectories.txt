@@ -1,0 +1,2 @@
+/Users/admin/Desktop/CS149/opencv-3.0.0/samples/github/BB8-Robot/Pascal/Vision/CMakeFiles/motionTrack.dir
+/Users/admin/Desktop/CS149/opencv-3.0.0/samples/github/BB8-Robot/Pascal/Vision/CMakeFiles/FSM.dir
