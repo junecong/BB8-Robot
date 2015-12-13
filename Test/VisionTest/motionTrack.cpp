@@ -264,6 +264,10 @@ int main(int argc, char **argv) {
 			points.push_back(center);
 		}
 
+		cout << "centerx " << center.x <<endl;
+		cout << "centery " << center.y <<endl;
+
+
 		for (int i = 1; i < pt_size; i++) {
 			line(frame, points[i - 1], points[i], Scalar(43,231,123), 6);
 		}

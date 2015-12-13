@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/admin/Desktop/CS149/opencv-3.0.0/samples/github/BB8-Robot/Test/VisionTest/FSM.cpp
+string
+-
+stdio.h
+-
+stdlib.h
+-
+iostream
+-
+math.h
+-
+FSM.h
+/Users/admin/Desktop/CS149/opencv-3.0.0/samples/github/BB8-Robot/Test/VisionTest/FSM.h
+
+/Users/admin/Desktop/CS149/opencv-3.0.0/samples/github/BB8-Robot/Test/VisionTest/FSM.h
+string
+-
+stdio.h
+-
+stdlib.h
+-
+iostream
+-
+
