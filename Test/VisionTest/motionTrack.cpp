@@ -6,6 +6,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include "motionTrack.h"
+#include "FSM.h"
 
 #define MAXQUEUESIZE 32
 #define MAXSIZE 5
@@ -86,7 +88,8 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
     }
 }
 
-void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound, vector<Vec3f> circles, bool isObject) {
+void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound,
+				 vector<Vec3f> circles, bool isObject) {
 	Mat gray, blur, hsv_frame;
 	// imshow not supported on intel edison boards
 	// comment out when uploading to board
@@ -125,7 +128,14 @@ void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound, ve
 	}
 }
 
-void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, Point2f prev_center, float *radius, float prev_radius, bool isObject) {
+// <<<<<<< HEAD
+// void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, Point2f prev_center, float *radius, float prev_radius, bool isObject) {
+// =======
+
+// play around with radialBias to tune how big the object is to detect
+void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, Point2f prev_center,
+				  float *radius, float prev_radius, bool isObject, bool *isOffscreen, int bias=10, int radialBias=10) {
+// >>>>>>> d87b12943804de132d6747ea7798d7347f1a70fd
 	double largest_area = 0;
 	int contour_index = 0;
 	deque <vector<Point> > largest_contours;
@@ -178,9 +188,17 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 			}
 		}
 
-		int bias = 10;
-
-		if (*radius > 10) {
+		if (*radius > radialBias) {
+			if (isObject) {
+				// might not be object we're looking for
+				circle(*frame, *center, 3, Scalar(147, 20, 32), 3, 8, 0);
+				circle(*frame, *center, (int)*radius, Scalar(0, 255, 0), 2, 8, 0);
+				*isOffscreen = false;
+			} else {
+				circle(*frame, *center, 3, Scalar(255, 101, 255), 3, 8, 0);
+				circle(*frame, *center, (int)*radius, Scalar(255, 0, 0), 2, 8, 0);
+			}
+		} else {
 			if (isObject) {
 				if (circles.size() > 0) {
 					// for sure this is the object we are looking for
@@ -188,28 +206,42 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 						Point circleCenter = Point(cvRound(circles[i][0]), cvRound(circles[i][1]));
 						if (abs(circleCenter.x - (*center).x) < bias && abs(circleCenter.y - (*center).y) < bias) {
 							circle(*frame, *center, 3, Scalar(139, 100, 54), 3, 8, 0);
-							circle(*frame, *center, *radius, Scalar(0, 255, 0), 2, 8, 0);
+// <<<<<<< HEAD
+// 							circle(*frame, *center, *radius, Scalar(0, 255, 0), 2, 8, 0);
+// =======
+							circle(*frame, *center, (int)*radius, Scalar(0, 255, 0), 2, 8, 0);
+							*isOffscreen = true;
+// >>>>>>> d87b12943804de132d6747ea7798d7347f1a70fd
 						}
 					}
 				} else {
 					// might not be object we're looking for
-					circle(*frame, *center, 3, Scalar(147, 20, 32), 3, 8, 0);
-					circle(*frame, *center, *radius, Scalar(0, 0, 255), 2, 8, 0);
+// <<<<<<< HEAD
+// 					circle(*frame, *center, 3, Scalar(147, 20, 32), 3, 8, 0);
+// 					circle(*frame, *center, *radius, Scalar(0, 0, 255), 2, 8, 0);
+// 				}
+// 			} else {
+// 				circle(*frame, *center, 3, Scalar(255, 101, 255), 3, 8, 0);
+// 				circle(*frame, *center, *radius, Scalar(79, 167, 64), 2, 8, 0);
+// =======
+					circle(*frame, *center, 3, Scalar(0, 0, 255), 3, 8, 0);
+					circle(*frame, *center, (int)*radius, Scalar(0, 0, 255), 2, 8, 0);
+					*isOffscreen = true;
 				}
-			} else {
-				circle(*frame, *center, 3, Scalar(255, 101, 255), 3, 8, 0);
-				circle(*frame, *center, *radius, Scalar(79, 167, 64), 2, 8, 0);
+				// *isOffscreen = true;
+// >>>>>>> d87b12943804de132d6747ea7798d7347f1a70fd
 			}
 		}
 	}
 }
 
-void detectDirection(Mat *frame, deque <Point2f> points, int pt_size) {
+// play around with bias to get more sensitive readings
+void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *direction, int x_bias=10, int y_bias=10) {
 	int dX = 0;
 	int dY = 0;
-	int x_bias = 20;
-	int y_bias = 20;
 	char dXdY[50] = "";
+	string latDirection = "";
+	string longDirection = "";
 
 	if (points.size() > 10) {
 		// find change in x and y using points from queue
@@ -218,21 +250,45 @@ void detectDirection(Mat *frame, deque <Point2f> points, int pt_size) {
 		sprintf(dXdY, "dx: %d dy: %d", dX, dY);
 		if (abs(dX) > x_bias) {
 			if (dX > 0) {
-				cout << "West" << endl;
+				latDirection = "West";
 			} else {
-				cout << "East" << endl;
+				latDirection = "East";
 			}
 		}
 		if (abs(dY) > y_bias) {
 			if (dY > 0) {
-				cout << "North" << endl;
+				longDirection = "North";
 			} else {
-				cout << "South" << endl;
+				longDirection = "South";
 			}
+		}
+		if (!longDirection.empty() && !latDirection.empty()) {
+			*direction = longDirection + "-" + latDirection;
+		} else if (!longDirection.empty()){
+			*direction = longDirection;
+		} else if (!latDirection.empty()) {
+			*direction = latDirection;
 		}
 	}
 
 	putText(*frame, dXdY, Point(10, 450), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
+}
+
+float getAverageRadius (deque <float> radii, int radiiSize) {
+	float total = 0;
+	for (int i = 0; i < radiiSize; i++) {
+		total += radii[i];
+	}
+	return total / radiiSize;
+}
+
+Point2f getAveragePoint (deque <Point2f> center, float size) {
+	Point2f pointTotal = Point2f(0, 0);
+	for (int i = 0; i < size; i++) {
+		pointTotal += center[i];
+	}
+
+	return Point2f(pointTotal.x/size, pointTotal.y/size);
 }
 
 void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *fileName) {
@@ -240,21 +296,7 @@ void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *f
 	ofstream outfile;
 	char response[10];
 
-// <<<<<<< HEAD
-// 	// Set up camera
-// 	// change to 0 when on Pascal
-// 	if (!cap.open(0)) {
-// 		cout << "Error detecting camera" << endl;
-// 		return -1;
-// 	}
-
-// 	Scalar lowerBound = Scalar(0,0,0);
-// 	Scalar upperBound = Scalar(120,255,255);
-
-// 	cout << "Recalibrate? Y or N: ";
-// =======
 	cout << "Recalibrate for "<< fileName << " ? y or n: ";
-// >>>>>>> a61ed3516c2580a5c1a456249ade89a480c00d96
 	cin >> response;
 	response[0] = tolower(response[0]);
 
@@ -280,13 +322,28 @@ void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *f
 //default camera at 0
 int main(int argc, char **argv) {
 	VideoCapture cap;
-	deque <Point2f> points;
+	deque <Point2f> objectPoints;
+	deque <Point2f> destPoints;
+	deque <float> objectRadii;
+	deque <float> destRadii;
+
+	bool debugMode = false;
+
+	// detect debug mode
+	if (argc > 1) {
+		char *flag = argv[1];
+		if (strcmp(flag, "-d") == 0) {
+			debugMode = true;
+		}
+	}
 
 	// Set up camera
-	// change to 0 when on Pascal
-	if (!cap.open(0)) {
-		cout << "Error detecting camera" << endl;
-		return -1;
+	if (!cap.open(1)) {
+		cout << "Error detecting camera1" << endl;
+		if (!cap.open(0)) {
+			cout << "Error detecting camera0" << endl;
+			return -1;
+		}
 	}
 
 	Scalar lowerBoundObject = Scalar(0, 0, 0);
@@ -303,12 +360,13 @@ int main(int argc, char **argv) {
 	namedWindow("drawing", WINDOW_NORMAL);
 	resizeWindow("drawing", 600, 600);
 
-	Point2f center;
-	Point2f prev_center = center;
+// <<<<<<< HEAD
+	Point2f objectCenter;
+	Point2f prev_objectCenter = objectCenter;
 	Point2f destCenter;
 	Point2f prev_destCenter = destCenter;
-	float radius;
-	float prev_radius;
+	float objectRadius;
+	float prev_objectRadius;
 	float destRadius;
 	float prev_destRadius;
 
@@ -319,8 +377,12 @@ int main(int argc, char **argv) {
 	// double avg_radius = 0;
 	// double tot_radius = 0;
 
+// =======
+// >>>>>>> d87b12943804de132d6747ea7798d7347f1a70fd
 	// loop to capture and analyze frames
 	while(1) {
+		string direction = "Stationary";
+		bool isOffscreen = true;
 		Mat frame, mask, destMask;
 		cap.read(frame);
 
@@ -341,59 +403,120 @@ int main(int argc, char **argv) {
 		vector<vector<Point> > contours;
 		findContours(mask.clone(), contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 
-		Moments m;
-
 		// finds Contours for the Destination
 		vector<vector<Point> > destContours;
 		findContours(destMask.clone(), destContours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 
 		// detects the object and draws to the frame
 		// gives the center and radius of the object
-		detectObject(&frame, circles, contours, &center, prev_center, &radius, prev_radius, true); 
-		prev_center = center; 
-		prev_radius = radius;
+// <<<<<<< HEAD
+		detectObject(&frame, circles, contours, &objectCenter, prev_objectCenter, &objectRadius, prev_objectRadius, true, &isOffscreen); 
+		prev_objectCenter = objectCenter; 
+		prev_objectRadius = objectRadius;
 
-		// if ((dist > max_dist) && (count > 1)){
-		// 	max_dist = dist;
-		// 	string text3 = "max_distance: " + to_string(dist);
-		// 	cout << text3 << endl;
-		// }
-		// count++;
-		// tot_radius += radius;
-		// avg_radius = tot_radius / count;
-		// string text3 = "distance: " + to_string(dist);
-		// cout << text3 << endl;
-		// string text6 = "difference in points: " + to_string(norm(center - prev_center));
-		// cout << text6 << endl;
-
-		// string text = "prev_radius: " + to_string(radius);
-		// string text2 = "prev_center: (" + to_string(prev_center.x) + ", " + to_string(prev_center.y) + ")";
-		// string text5 = "center: (" + to_string(center.x) + ", " + to_string(center.y) + ")";
-		// cout << text << endl;
-		// cout << text2 << endl;
-		// cout << text5 << endl;
-
+		detectObject(&frame, destCircles, destContours, &destCenter, prev_destCenter, &destRadius, prev_destRadius, false, &isOffscreen);
+		prev_destCenter = destCenter;
+		prev_objectRadius = objectRadius;
+// =======
+		// Point2f objectCenter;
+		// Point2f prev_center = objectCenter;
+		// float objectRadius = 0;
+		// detectObject(&frame, circles, contours, &objectCenter, &objectRadius, true, &isOffscreen);
 
 		// detects the destination object and draws to the frame
 		// gives the center and radius of the object
+		// Point2f destCenter;
+		// float destRadius = 0;
+		// detectObject(&frame, destCircles, destContours, &destCenter, &destRadius, false, &isOffscreen);
 
-		detectObject(&frame, destCircles, destContours, &destCenter, prev_destCenter, &destRadius, prev_destRadius, false);
+		int pt_size = objectPoints.size();
+		int obpt_size = destPoints.size();
+		int objectRadii_size = objectRadii.size();
+		int destRadii_size = destRadii.size();
 
-		int pt_size = points.size();
+		// add object center points to queue
+		objectPoints.push_back(objectCenter);
+		// add destination center points to queue
+		destPoints.push_back(destCenter);
+		// add radius of object to queue
+		objectRadii.push_back(objectRadius);
+		// add radius of dest ro queue
+		destRadii.push_back(destRadius);
 
-		if (center != Point2f(0,0)) {
-			points.push_back(center);
-		}
-
+		// draw line to frame from point queue of object movement
 		for (int i = 1; i < pt_size; i++) {
-			line(frame, points[i - 1], points[i], Scalar(43,231,123), 6);
+			line(frame, objectPoints[i - 1], objectPoints[i], Scalar(43,231,123), 6);
 		}
+// >>>>>>> d87b12943804de132d6747ea7798d7347f1a70fd
 
 		// detects direction of object movement
-		detectDirection(&frame, points, pt_size);
+		detectDirection(&frame, objectPoints, pt_size, &direction);
 
-		if(pt_size >= MAXQUEUESIZE) {
-			points.pop_front();
+		// get averaged center points from object
+		Point2f avgCenterPoint = getAveragePoint(objectPoints, pt_size);
+
+		// get averaged center points from destination
+		Point2f avgDestPoint = getAveragePoint(destPoints, obpt_size);
+
+		// gets average radius of object
+		float avgObjectRadius = getAverageRadius(objectRadii, objectRadii_size);
+
+		// gets average radius of destination object
+		float avgDestRadius = getAverageRadius(destRadii, destRadii_size);
+
+		// need to calculate angle and driveDistance
+		float angle = 0.0;
+		float dx = abs(avgCenterPoint.x - avgDestPoint.x);
+		float dy = abs(avgCenterPoint.y - avgDestPoint.y);
+		float centerDistance = sqrt(dx*dx + dy*dy);
+		float driveDistance = centerDistance - avgObjectRadius - avgDestRadius;
+
+		if (debugMode) {
+			cout << endl;
+			cout << "distance left: " << driveDistance << endl;
+			cout << "offscreen: " << isOffscreen << endl;
+			cout << "object point: " << "(" << avgCenterPoint.x << ", " << avgCenterPoint.y << ")" << endl;
+			cout << "object radius: " << avgObjectRadius << endl;
+			cout << "dest point: " << "(" << avgDestPoint.x << ", " << avgDestPoint.y << ")" << endl;
+			cout << "dest radius: " << avgDestRadius << endl;
+			cout << "dircetion: " << direction << endl;
+			cout << endl;
+		}
+
+		string output[3];
+
+		MaxwellStatechart(
+			driveDistance, 			// distance from object to destination
+			isOffscreen, 			// if Object is isOffscreen
+			avgCenterPoint.x, 		// x point of Object
+			avgCenterPoint.y, 		// y point of Object
+			avgObjectRadius, 		// radius of Object
+			avgDestPoint.x, 		// x point of Destination
+			avgDestPoint.y, 		// y point of Destination
+			avgDestRadius,			// radius of destination
+			direction,				// direction object is moving
+			output					// output 
+		);
+
+		cout << output << endl;
+
+		// pop points queue
+		if (pt_size >= MAXQUEUESIZE) {
+			objectPoints.pop_front();
+		}
+
+		if (obpt_size >= MAXQUEUESIZE) {
+			destPoints.pop_front();
+		}
+
+		// pop objectRadii queue
+		if (objectRadii_size >= MAXQUEUESIZE) {
+			objectRadii.pop_front();
+		}
+
+		// pop destRadii queue
+		if (destRadii_size >= MAXQUEUESIZE) {
+			destRadii.pop_front();
 		}
 
     	imshow("drawing", frame);

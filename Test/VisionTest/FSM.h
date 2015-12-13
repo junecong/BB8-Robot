@@ -9,5 +9,16 @@ using namespace std;
 
 int test();
 void MaxwellStatechartTest(string direction);
-void MaxwellStatechart(float orientAngle, float driveDistance, bool offscreen);
+float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx, float desty);
+void MaxwellStatechart(
+	float driveDistance,
+	bool isOffscreen,
+	float bbx,
+	float bby,
+	float bbR,
+	float destx,
+	float desty,
+	float destR,
+	string direction, 
+	string output[]);
 #endif
