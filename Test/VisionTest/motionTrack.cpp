@@ -8,6 +8,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 #define MAXQUEUESIZE 32
+#define MAXSIZE 5
+#define MAX_OBJ_DIST_BW_FRAMES 10
+#define ACTUAL_DIAMETER_IN_CM 16.f
 
 using namespace cv;
 using namespace std;
@@ -122,9 +125,12 @@ void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound, ve
 	}
 }
 
-void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, float *radius, bool isObject) {
+void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, Point2f prev_center, float *radius, float prev_radius, bool isObject) {
 	double largest_area = 0;
 	int contour_index = 0;
+	deque <vector<Point> > largest_contours;
+	int contours_size;
+
 	// if contours exist
 	if (contours.size() > 0) {
 		// find largest area and center
@@ -133,14 +139,44 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 			if (area > largest_area) {
 				largest_area = area;
 				contour_index = i;
+				largest_contours.push_back(contours[i]);
+				contours_size = largest_contours.size();
+				if (contours_size > MAXSIZE){
+					largest_contours.pop_front();
+				}
 			}
 		}
 
-		vector<Point> correctContour = contours[contour_index];
 
-		// Approximate polygon curve with specified position
-		approxPolyDP(Mat(correctContour), correctContour, 3, true);
-		minEnclosingCircle((Mat)correctContour, *center, *radius);
+		// vector<Point> correctContour = contours[contour_index];
+		float min_radius;
+		float max_radius;
+		float avg_radius;
+		float avg_center;
+		float dist_center;
+		float dist_radius;
+		Point2f min_center;
+		Point2f max_center;
+
+
+		for (int i = 0; i < largest_contours.size(); i++){
+			vector<Point> correctContour = largest_contours[i];
+
+			// Approximate polygon curve with specified position
+			approxPolyDP(Mat(correctContour), correctContour, 3, true);
+			minEnclosingCircle((Mat)correctContour, *center, *radius);
+			// maxEnclosingCircle((Mat)correctContour, *center, *radius);
+			// avg_radius = (*min_radius + *max_radius)/2.f;
+			// avg_center = (*min_center + *max_center)/2.f;
+
+			// Filter on movement of the Center
+			dist_center = (norm(*center - prev_center) * ACTUAL_DIAMETER_IN_CM) / (2.0 * (*radius));
+			dist_radius = fabs((*radius - prev_radius) * ACTUAL_DIAMETER_IN_CM) / (2.0 * (*radius));
+			
+			if (dist_center < MAX_OBJ_DIST_BW_FRAMES && dist_radius < MAX_OBJ_DIST_BW_FRAMES){
+				break;
+			}
+		}
 
 		int bias = 10;
 
@@ -152,17 +188,17 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 						Point circleCenter = Point(cvRound(circles[i][0]), cvRound(circles[i][1]));
 						if (abs(circleCenter.x - (*center).x) < bias && abs(circleCenter.y - (*center).y) < bias) {
 							circle(*frame, *center, 3, Scalar(139, 100, 54), 3, 8, 0);
-							circle(*frame, *center, (int)*radius, Scalar(0, 255, 0), 2, 8, 0);
+							circle(*frame, *center, *radius, Scalar(0, 255, 0), 2, 8, 0);
 						}
 					}
 				} else {
 					// might not be object we're looking for
 					circle(*frame, *center, 3, Scalar(147, 20, 32), 3, 8, 0);
-					circle(*frame, *center, (int)*radius, Scalar(0, 0, 255), 2, 8, 0);
+					circle(*frame, *center, *radius, Scalar(0, 0, 255), 2, 8, 0);
 				}
 			} else {
 				circle(*frame, *center, 3, Scalar(255, 101, 255), 3, 8, 0);
-				circle(*frame, *center, (int)*radius, Scalar(79, 167, 64), 2, 8, 0);
+				circle(*frame, *center, *radius, Scalar(79, 167, 64), 2, 8, 0);
 			}
 		}
 	}
@@ -268,8 +304,20 @@ int main(int argc, char **argv) {
 	resizeWindow("drawing", 600, 600);
 
 	Point2f center;
-	Point2f prev_center;
+	Point2f prev_center = center;
+	Point2f destCenter;
+	Point2f prev_destCenter = destCenter;
+	float radius;
 	float prev_radius;
+	float destRadius;
+	float prev_destRadius;
+
+	double max_dist = 0;
+	double dist = 0;
+	int count = 0;
+
+	// double avg_radius = 0;
+	// double tot_radius = 0;
 
 	// loop to capture and analyze frames
 	while(1) {
@@ -301,30 +349,35 @@ int main(int argc, char **argv) {
 
 		// detects the object and draws to the frame
 		// gives the center and radius of the object
-		Point2f center;
-		Point2f prev_center = center; 
-		float radius;
-		double dist;
-
-		detectObject(&frame, circles, contours, &center, &radius, true); 
-
-		dist = norm(center - prev_center);
-		string text3 = "distance: " + to_string(dist);
-		cout << text3 << endl;
-
-		prev_center = center;
+		detectObject(&frame, circles, contours, &center, prev_center, &radius, prev_radius, true); 
+		prev_center = center; 
 		prev_radius = radius;
-		string text = "prev_radius: " + to_string(radius);
-		string text2 = "prev_center: (" + to_string(center.x) + ", " + to_string(center.y) + ")";
-		cout << text << endl;
-		cout << text2 << endl;
+
+		// if ((dist > max_dist) && (count > 1)){
+		// 	max_dist = dist;
+		// 	string text3 = "max_distance: " + to_string(dist);
+		// 	cout << text3 << endl;
+		// }
+		// count++;
+		// tot_radius += radius;
+		// avg_radius = tot_radius / count;
+		// string text3 = "distance: " + to_string(dist);
+		// cout << text3 << endl;
+		// string text6 = "difference in points: " + to_string(norm(center - prev_center));
+		// cout << text6 << endl;
+
+		// string text = "prev_radius: " + to_string(radius);
+		// string text2 = "prev_center: (" + to_string(prev_center.x) + ", " + to_string(prev_center.y) + ")";
+		// string text5 = "center: (" + to_string(center.x) + ", " + to_string(center.y) + ")";
+		// cout << text << endl;
+		// cout << text2 << endl;
+		// cout << text5 << endl;
 
 
 		// detects the destination object and draws to the frame
 		// gives the center and radius of the object
-		Point2f destCenter;
-		float destRadius;
-		detectObject(&frame, destCircles, destContours, &destCenter, &destRadius, false);
+
+		detectObject(&frame, destCircles, destContours, &destCenter, prev_destCenter, &destRadius, prev_destRadius, false);
 
 		int pt_size = points.size();
 
