@@ -13,14 +13,16 @@ using namespace std;
 
 typedef enum {
 	MAXWELL_ORIENT = 0,
+	MAXWELL_WAIT_1,
 	MAXWELL_TURN,
+	MAXWELL_WAIT_2,
 	MAXWELL_DRIVE,
 	MAXWELL_OFFSCREEN,
 	MAXWELL_DONE
 } robotState_t;
 
 typedef enum {
-	ORIENT_IDLE = 5,
+	ORIENT_IDLE = 7,
 	ORIENT_INITIAL_FORWARD,
 	ORIENT_FINISHED
 } subState_t;
@@ -42,28 +44,18 @@ float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx,
 	float angleRad;
 	float angleDegree;
 	float turn;
-
 	float oldNewVector[] = {newBBx-ogBBx , -(newBBy-ogBBy)};
 	float oldDestVector[] = {destx-ogBBx, -(desty-ogBBy)};
 	float newDestVector[] = {destx-newBBx, -(desty-newBBy)};
-
-	// cout << "oldNewVector: " << oldNewVector[0] <<  ", " << oldNewVector[1] << endl;
-	// cout << "oldDestVector: " << newDestVector[0] <<  ", " << newDestVector[1] << endl;
-	// cout << "newDestVector: " << newDestVector[0] << ", " << newDestVector[1] << endl;
-
 	float num = (oldNewVector[0] * newDestVector[0]) + (oldNewVector[1] * newDestVector[1]);
 	float denom = sqrt(pow(oldNewVector[0],2) + pow(oldNewVector[1],2)) * sqrt(pow(newDestVector[0],2) + pow(newDestVector[1],2));
 
 	angleRad = acos ( num / denom );
 	angleDegree = (angleRad *180)/M_PI ;
-
 	turn = (oldNewVector[0]*oldDestVector[1]) - (oldNewVector[1]*oldDestVector[0]);
 	if (turn > 0) {
 		angleDegree = -angleDegree;
 	} 
-
-	cout << "Angle to Turn: " << angleDegree << endl;
-	cout << " " << endl;
 	return angleDegree;
 }
 
@@ -93,7 +85,7 @@ void MaxwellStatechart(float driveDistance,
 	static float dest_y_var;
 	static float dest_rad_var;
 	static float degreeToTurn;
-	static string speed = ".5";
+	static string speed = ".7";
 	static string degreeToTurnStr;
 	static int counter;
 	static int drivecounter;
@@ -138,21 +130,36 @@ void MaxwellStatechart(float driveDistance,
 					newBBy = bby;
 					newBBRad = bbR;
 					degreeToTurn = orient (ogBBx, ogBBy, newBBx, newBBy, dest_x_var, dest_y_var); 
-					robotState = MAXWELL_TURN;
+					robotState = MAXWELL_WAIT_1;
 					subState = ORIENT_IDLE;
 					break;
 			}
 			break;
+
+		case MAXWELL_WAIT_1:
+			cout << "MAXWELL_WAIT_1" << endl;
+			if (direction == "Stationary") {
+				robotState = MAXWELL_TURN;
+			}
+			break;
+
 		case MAXWELL_TURN:
 			cout << "MAXWELL_TURN" << endl;
-			cout << "degree turning" << degreeToTurn << endl;
+			cout << "degree turning: " << degreeToTurn << endl;
 			cout << " " << endl;
 
 			degreeToTurnStr = to_string(degreeToTurn);
 			output[0] = "turn";
 			output[1] = degreeToTurnStr;
 			output[2] = speed;
-			robotState = MAXWELL_DRIVE;
+			robotState = MAXWELL_WAIT_2;
+			break;
+
+		case MAXWELL_WAIT_2:
+			cout << "MAXWELL_WAIT_2" << endl;
+			if (direction == "Stationary") {
+				robotState = MAXWELL_DRIVE;
+			}
 			break;
 
 		case MAXWELL_DRIVE:

@@ -458,6 +458,10 @@ int analyzeVideo(string output[]) {
 			output					// output 
 		);
 
+		if (output[0].compare("turn") == 0){
+			cout << "CURRENTLY TURNING" << endl;
+		}
+
 		// pop points queue
 		if (pt_size >= MAXQUEUESIZE) {
 			objectPoints.pop_front();
