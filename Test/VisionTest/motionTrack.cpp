@@ -415,6 +415,8 @@ int main(int argc, char **argv) {
 			output					// output 
 		);
 
+		cout << output << endl;
+
 		// pop points queue
 		if (pt_size >= MAXQUEUESIZE) {
 			objectPoints.pop_front();
