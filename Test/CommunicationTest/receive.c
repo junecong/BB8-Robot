@@ -110,39 +110,39 @@ int main(int argc, char *argv[]) {
         printf("Here is the message: %s\n", buffer);
 
         //decode buffer
-        decodePacket(buffer, strlen(buffer), size, data, dist_angle, percentSpeed);
-        float fdist_angle = 0;
-        float fpercentSpeed = 0;
-        if (strcmp(data, "error") == 0) {
-            memcpy(data, "stop", 4);
-        } else {
-            printf("%d\n", strcmp(dist_angle, "error"));
-            printf("%d\n", strcmp(percentSpeed, "error"));
-            if (strcmp(dist_angle, "error") != 0) {
-                fdist_angle = atof(dist_angle);
-                printf("inside compare dist_angle: %f\n", fdist_angle);
-            }
-            if (strcmp(percentSpeed, "error") != 0) {
-                fpercentSpeed = atof(percentSpeed);
-                printf("inside percent: %s\n", fpercentSpeed);
-            }
-        }
+        // decodePacket(buffer, strlen(buffer), size, data, dist_angle, percentSpeed);
+        // float fdist_angle = 0;
+        // float fpercentSpeed = 0;
+        // if (strcmp(data, "error") == 0) {
+        //     memcpy(data, "stop", 4);
+        // } else {
+        //     printf("%d\n", strcmp(dist_angle, "error"));
+        //     printf("%d\n", strcmp(percentSpeed, "error"));
+        //     if (strcmp(dist_angle, "error") != 0) {
+        //         fdist_angle = atof(dist_angle);
+        //         printf("inside compare dist_angle: %f\n", fdist_angle);
+        //     }
+        //     if (strcmp(percentSpeed, "error") != 0) {
+        //         fpercentSpeed = atof(percentSpeed);
+        //         printf("inside percent: %s\n", fpercentSpeed);
+        //     }
+        // }
 
         if (strcmp(data, "exit") == 0) {
             n = write(newsockfd, "done", 5);
-            move("stop", 0, 0);
+            // move("stop", 0, 0);
             // move("stop", 50);
             break;
         } else {
             // call to drive motors in Servo/motorControl.cpp
-            printf("data before: %s\n", data);
-            printf("angle before: %f\n", fdist_angle);
-            printf("speed before: %f\n", fpercentSpeed);
-            move(data, fdist_angle, fpercentSpeed);
+            // printf("data before: %s\n", data);
+            // printf("angle before: %f\n", fdist_angle);
+            // printf("speed before: %f\n", fpercentSpeed);
+            // move(data, fdist_angle, fpercentSpeed);
             // move(data, 50);
             n = write(newsockfd, "I got your message", 18);
         }
-
+        n = write(newsockfd, "I got your message", 18);
         if (n < 0) {
             error("ERROR writing to socket");
         }

@@ -8,9 +8,20 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include "FSM.h"
 
 #define MAXQUEUESIZE 32
+#define MAXSIZE 5
+#define MAX_OBJ_DIST_BW_FRAMES 10
+#define ACTUAL_DIAMETER_IN_CM 16.f
+
+extern mutex msg_mutex;
+extern condition_variable no_message;
+extern bool messageReady;
+extern bool debugMode;
 
 using namespace cv;
 using namespace std;

@@ -6,13 +6,17 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include "motionTrack.h"
 #include "FSM.h"
+#include <chrono>
 
-#define MAXQUEUESIZE 32
-#define MAXSIZE 5
-#define MAX_OBJ_DIST_BW_FRAMES 10
-#define ACTUAL_DIAMETER_IN_CM 16.f
+mutex msg_mutex;
+condition_variable no_message;
+bool messageReady = false;
+bool debugMode = false;
 
 using namespace cv;
 using namespace std;
@@ -300,23 +304,12 @@ void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *f
 }
 
 //default camera at 0
-// int main(int argc, char **argv) {
 int analyzeVideo(string output[]) {
 	VideoCapture cap;
 	deque <Point2f> objectPoints;
 	deque <Point2f> destPoints;
 	deque <float> objectRadii;
 	deque <float> destRadii;
-
-	bool debugMode = false;
-
-	// detect debug mode
-	// if (argc > 1) {
-	// 	char *flag = argv[1];
-	// 	if (strcmp(flag, "-d") == 0) {
-	// 		debugMode = true;
-	// 	}
-	// }
 
 	// Set up camera
 	if (!cap.open(1)) {
@@ -350,12 +343,9 @@ int analyzeVideo(string output[]) {
 	float destRadius;
 	float prev_destRadius;
 
-	double max_dist = 0;
-	double dist = 0;
-	int count = 0;
-
 	// loop to capture and analyze frames
 	while(1) {
+		messageReady = false;
 		string direction = "Stationary";
 		bool isOffscreen = true;
 		Mat frame, mask, destMask;
@@ -388,12 +378,14 @@ int analyzeVideo(string output[]) {
 		prev_objectCenter = objectCenter; 
 		prev_objectRadius = objectRadius;
 
+		// detects the destination and draws to the frame
+		// gives the center and radius of the destination
 		detectObject(&frame, destCircles, destContours, &destCenter, prev_destCenter, &destRadius, prev_destRadius, false, &isOffscreen);
 		prev_destCenter = destCenter;
 		prev_objectRadius = objectRadius;
 
-		int pt_size = objectPoints.size();
-		int obpt_size = destPoints.size();
+		int obPt_size = objectPoints.size();
+		int destPt_size = destPoints.size();
 		int objectRadii_size = objectRadii.size();
 		int destRadii_size = destRadii.size();
 
@@ -407,18 +399,18 @@ int analyzeVideo(string output[]) {
 		destRadii.push_back(destRadius);
 
 		// draw line to frame from point queue of object movement
-		for (int i = 1; i < pt_size; i++) {
+		for (int i = 1; i < obPt_size; i++) {
 			line(frame, objectPoints[i - 1], objectPoints[i], Scalar(43,231,123), 6);
 		}
 
 		// detects direction of object movement
-		detectDirection(&frame, objectPoints, pt_size, &direction);
+		detectDirection(&frame, objectPoints, obPt_size, &direction);
 
 		// get averaged center points from object
-		Point2f avgCenterPoint = getAveragePoint(objectPoints, pt_size);
+		Point2f avgCenterPoint = getAveragePoint(objectPoints, obPt_size);
 
 		// get averaged center points from destination
-		Point2f avgDestPoint = getAveragePoint(destPoints, obpt_size);
+		Point2f avgDestPoint = getAveragePoint(destPoints, destPt_size);
 
 		// gets average radius of object
 		float avgObjectRadius = getAverageRadius(objectRadii, objectRadii_size);
@@ -445,6 +437,8 @@ int analyzeVideo(string output[]) {
 			cout << endl;
 		}
 
+		// lock mutex to construct message from FSM
+		unique_lock<std::mutex> lck(msg_mutex);
 		MaxwellStatechart(
 			driveDistance, 			// distance from object to destination
 			isOffscreen, 			// if Object is isOffscreen
@@ -455,15 +449,20 @@ int analyzeVideo(string output[]) {
 			avgDestPoint.y, 		// y point of Destination
 			avgDestRadius,			// radius of destination
 			direction,				// direction object is moving
-			output					// output 
+			output					// output message
 		);
 
-		// pop points queue
-		if (pt_size >= MAXQUEUESIZE) {
+		// signal main thread that message is done
+		messageReady = true;
+		no_message.notify_one();
+
+		// pop object point queue
+		if (obPt_size >= MAXQUEUESIZE) {
 			objectPoints.pop_front();
 		}
 
-		if (obpt_size >= MAXQUEUESIZE) {
+		// pop destination point queue
+		if (destPt_size >= MAXQUEUESIZE) {
 			destPoints.pop_front();
 		}
 
@@ -480,6 +479,8 @@ int analyzeVideo(string output[]) {
     	imshow("drawing", frame);
 
 		if (waitKey(30) >= 0) {
+			cap.release();
+			destroyAllWindows();
 			break;
 		}
 	}
