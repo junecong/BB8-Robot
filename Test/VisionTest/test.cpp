@@ -124,9 +124,10 @@ void MaxwellStatechart(float driveDistance,
 					output[0] = "drive";
 					output[1] = "25";
 					output[2] = speed;
-					while (direction != "stablized");
-					subState = ORIENT_AWAITING;
-
+					if (direction == "stablized") {
+						subState = ORIENT_AWAITING;
+					}
+					
 				case ORIENT_AWAITING:
 					newBBx = bbx;
 					newBBy = bby;
@@ -135,7 +136,7 @@ void MaxwellStatechart(float driveDistance,
 
 				case ORIENT_FINISHED:	
 					degreeToTurn = orient (ogBBx, ogBBy, newBBx, newBBy, dest_x_var, dest_y_var); 
-					robotState = MAXWELL_DRIVE;
+					robotState = MAXWELL_TURN;
 					subState = ORIENT_IDLE;
 				break;
 			}
@@ -144,8 +145,7 @@ void MaxwellStatechart(float driveDistance,
 			output[0] = "turn";
 			output[1] = to_string(degreeToTurn);
 			output[2] = speed;
-			// output = {"turn", degreeToTurn, 0};
-			while (direction != "stablized"); //wait for it to stop moving
+			sleep(5000);
 			robotState = MAXWELL_DRIVE;
 
 		case MAXWELL_DRIVE:
@@ -153,22 +153,20 @@ void MaxwellStatechart(float driveDistance,
 			output[0] = "drive";
 			output[1] = to_string(driveDistance);
 			output[2] = speed;
-			while (direction != "stablized"); //wait for it to stop moving
+			if (direction == "stablized") {
+				robotState = MAXWELL_ORIENT;
+			}
 			if (offscreen) {
 				robotState = MAXWELL_OFFSCREEN;
 			}
 			if (driveDistance <= 10) {
 				robotState = MAXWELL_DONE;
-			} else {
-				robotState = MAXWELL_ORIENT;
-			}
+			} 
 
 		case MAXWELL_OFFSCREEN:
 			output[0] = "drive";
 			output[1] = "-25";
 			output[2] = speed;
-			while (direction != "stablized");
-			while (direction != "stablized");
 			robotState = MAXWELL_ORIENT;
 
 		case MAXWELL_DONE:

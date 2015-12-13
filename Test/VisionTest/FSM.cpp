@@ -70,17 +70,16 @@ float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx,
 }
 
 
-void MaxwellStatechart(
-	float driveDistance, 
+void MaxwellStatechart(float driveDistance, 
 	bool offscreen, 
+	// bool start,
 	float bbx,
 	float bby,
 	float bbR,
 	float destx,
 	float desty,
 	float destR,
-	string direction, 
-	string output[]) {
+	string direction, string output[]){
 
 	// local state
 	static robotState_t robotState = MAXWELL_IDLE;
@@ -125,9 +124,10 @@ void MaxwellStatechart(
 					output[0] = "drive";
 					output[1] = "25";
 					output[2] = speed;
-					while (direction != "stablized");
-					subState = ORIENT_AWAITING;
-
+					if (direction == "stablized") {
+						subState = ORIENT_AWAITING;
+					}
+					
 				case ORIENT_AWAITING:
 					newBBx = bbx;
 					newBBy = bby;
@@ -136,7 +136,7 @@ void MaxwellStatechart(
 
 				case ORIENT_FINISHED:	
 					degreeToTurn = orient (ogBBx, ogBBy, newBBx, newBBy, dest_x_var, dest_y_var); 
-					robotState = MAXWELL_DRIVE;
+					robotState = MAXWELL_TURN;
 					subState = ORIENT_IDLE;
 				break;
 			}
@@ -145,8 +145,7 @@ void MaxwellStatechart(
 			output[0] = "turn";
 			output[1] = to_string(degreeToTurn);
 			output[2] = speed;
-			// output = {"turn", degreeToTurn, 0};
-			while (direction != "stablized"); //wait for it to stop moving
+			sleep(5000);
 			robotState = MAXWELL_DRIVE;
 
 		case MAXWELL_DRIVE:
@@ -154,22 +153,20 @@ void MaxwellStatechart(
 			output[0] = "drive";
 			output[1] = to_string(driveDistance);
 			output[2] = speed;
-			while (direction != "stablized"); //wait for it to stop moving
+			if (direction == "stablized") {
+				robotState = MAXWELL_ORIENT;
+			}
 			if (offscreen) {
 				robotState = MAXWELL_OFFSCREEN;
 			}
 			if (driveDistance <= 10) {
 				robotState = MAXWELL_DONE;
-			} else {
-				robotState = MAXWELL_ORIENT;
-			}
+			} 
 
 		case MAXWELL_OFFSCREEN:
 			output[0] = "drive";
 			output[1] = "-25";
 			output[2] = speed;
-			while (direction != "stablized");
-			while (direction != "stablized");
 			robotState = MAXWELL_ORIENT;
 
 		case MAXWELL_DONE:
@@ -177,5 +174,25 @@ void MaxwellStatechart(
 
 		break;
 	}
+}
+
+
+int main(int argc, char **argv) {
+	// // return orientation(10.2, 12.5, 16.2);
+	// orient (50, 100, 100, 50, 10, 10); //negative
+
+	// // orient (10, 100, 10, 50, 10, 10); //0
+
+	// orient (0, 100, 0, 50, 10, 10); //positive
+
+	// // orient (0, 10, 0, 0, 10, 10); //positive
+
+	// orient (0, 3, 2, 0, 2, 1); //positive
+
+	orient (0, 3, 2, 0, 2, 1); //positive
+
+	orient (0, 3, 2, 1, 2, 0); //negative
+
+	return 1;
 }
 
