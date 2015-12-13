@@ -215,6 +215,14 @@ void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *di
 	putText(*frame, dXdY, Point(10, 450), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
 }
 
+float getAverageRadius (deque <float> radii, int radiiSize) {
+	float total = 0;
+	for (int i = 0; i < radiiSize; i++) {
+		total += radii[i];
+	}
+	return total / radiiSize;
+}
+
 void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *fileName) {
 	ifstream infile;
 	ofstream outfile;
@@ -247,6 +255,7 @@ void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *f
 int main(int argc, char **argv) {
 	VideoCapture cap;
 	deque <Point2f> points;
+	deque <float> radii;
 
 	// Set up camera
 	// change to 0 when on Pascal
@@ -303,7 +312,7 @@ int main(int argc, char **argv) {
 		// gives the center and radius of the object
 		Point2f center;
 		Point2f prev_center = center; 
-		float radius;
+		float radius = 0;
 		detectObject(&frame, circles, contours, &center, &radius, true, &offscreen); 
 
 		// detects the destination object and draws to the frame
@@ -313,11 +322,17 @@ int main(int argc, char **argv) {
 		detectObject(&frame, destCircles, destContours, &destCenter, &destRadius, false, &offscreen);
 
 		int pt_size = points.size();
+		int radii_size = radii.size();
 
+		// add center points to queue 
 		if (center != Point2f(0,0)) {
 			points.push_back(center);
 		}
 
+		// add radius of object to queue
+		radii.push_back(radius);
+
+		// draw line to frame from point queue of object movement
 		for (int i = 1; i < pt_size; i++) {
 			line(frame, points[i - 1], points[i], Scalar(43,231,123), 6);
 		}
@@ -325,6 +340,9 @@ int main(int argc, char **argv) {
 		// detects direction of object movement
 		detectDirection(&frame, points, pt_size, &direction);
 
+		// detects change in radius of object
+		float avgRadius = getAverageRadius(radii, radii_size);
+		
 		// need to calculate angle and driveDistance
 		float angle = 0.0;
 		float dx = abs(center.x - destCenter.x);
@@ -337,15 +355,21 @@ int main(int argc, char **argv) {
 			offscreen, 				// if Object is offscreen
 			center.x, 				// x point of Object
 			center.y, 				// y point of Object
-			radius, 				// radius of Object
+			avgRadius, 				// radius of Object
 			destCenter.x, 			// x point of Destination
 			destCenter.y, 			// y point of Destination
 			destRadius,				// radius of destination
 			direction				// direction object is moving
 		);
 
-		if(pt_size >= MAXQUEUESIZE) {
+		// pop points queue
+		if (pt_size >= MAXQUEUESIZE) {
 			points.pop_front();
+		}
+
+		// pop radii queue
+		if (radii_size >= MAXQUEUESIZE) {
+			radii.pop_front();
 		}
 
     	imshow("drawing", frame);
