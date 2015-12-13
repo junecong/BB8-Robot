@@ -189,6 +189,7 @@ void MaxwellStatechart(float driveDistance,
 
 		case MAXWELL_DONE:
 			cout << "MAXWELL_DONE" << endl;
+			output[0] = "stop";
 
 		break;
 	}
