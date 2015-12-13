@@ -452,6 +452,7 @@ int analyzeVideo(string output[]) {
 			output					// output message
 		);
 
+
 		// signal main thread that message is done
 		messageReady = true;
 		no_message.notify_one();

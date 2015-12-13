@@ -96,10 +96,10 @@ int motorOneDirection (libusb_device_handle *handle, float rSpeed, float lSpeed)
 				0,
 				5000);
 	// r = f1.get()
-	// if (r < 0) {
-	// 	cout << "Error starting motor " << 0 << endl;
-	// 	return -1;
-	// }
+	if (r < 0) {
+		cout << "Error starting motor " << 0 << endl;
+		return -1;
+	}
 	// std::thread t3 (libusb_control_transfer, handle,
 	// 			0x40,	  //request type
 	// 			0x85,	  //request
@@ -108,7 +108,7 @@ int motorOneDirection (libusb_device_handle *handle, float rSpeed, float lSpeed)
 	// 			NULL,
 	// 			0,
 	// 			5000).join();
-	// auto f2 = std::async((libusb_control_transfer, handle,
+	// auto f2 = std::async(libusb_control_transfer, handle,
 	// 			0x40,	  //request type
 	// 			0x85,	  //request
 	// 			4*lSpeed,  //speed/value
@@ -125,10 +125,10 @@ int motorOneDirection (libusb_device_handle *handle, float rSpeed, float lSpeed)
 				0,
 				5000);
 	// r = f2.get()
-	// if (r < 0) {
-	// 	cout << "Error starting motor " << 2 << endl;
-	// 	return -1;
-	// }
+	if (r < 0) {
+		cout << "Error starting motor " << 2 << endl;
+		return -1;
+	}
 	// t2.join();
 	// t3.join();
 	return r;
@@ -208,11 +208,11 @@ int turn(libusb_device_handle *handle, int angle) {
 	if (norm_angle > 0){
 		rSpeed = 1490 + percentSpeed;
 		lSpeed = 1490 + percentSpeed;
-		timer = (fabs(norm_angle) / 360) * 1.975 * 1000;
+		timer = (fabs(norm_angle) / 360) * 1.91 * 1000;
 	} else {
 		rSpeed = 1490 - percentSpeed;
 		lSpeed = 1490 - percentSpeed;
-		timer = (fabs(norm_angle) / 360) * 2.2 * 1000;
+		timer = (fabs(norm_angle) / 360) * 2.09 * 1000;
 
 	}
 
@@ -238,24 +238,24 @@ int turn(libusb_device_handle *handle, int angle) {
 // - distance: distance to travel in cm
 int drive(libusb_device_handle *handle, float distance, float percent) {
 
-	float percentSpeed = 450 * percent;
+	float percentSpeed = 450.f * percent;
 	int lSpeed = 0;
 	int rSpeed = 0;
 	if (distance > 0){
-		lSpeed = 1470 + percentSpeed;
-		// No Weight
-		// rSpeed = 1445 - percentSpeed;
-		rSpeed = 1405 - percentSpeed;
-	} else {
-		lSpeed = 1500 - percentSpeed;
+		lSpeed = 1465 - percentSpeed;
 		// No Weight
 		// rSpeed = 1510 + percentSpeed;
-		rSpeed = 1530 + percentSpeed;
+		rSpeed = 1465 + percentSpeed;
+	} else {
+		lSpeed = 1515 + percentSpeed;
+		// No Weight
+		// rSpeed = 1445 - percentSpeed;
+		rSpeed = 1515 - percentSpeed;
 	}
 
 	int timer = (fabs(distance) / 30.5) * 2.65 * 1000;
 
-	motorOneDirection(handle, lSpeed, rSpeed);
+	motorOneDirection(handle, rSpeed, lSpeed);
 	std::thread t1 (pause_thread, timer);
 	t1.join();
 	// pause_thread(timer);
@@ -264,8 +264,31 @@ int drive(libusb_device_handle *handle, float distance, float percent) {
 	return 0;
 }
 
-int move (char *data, float dist_angle, float percentSpeed) {
-	char *action = data;
+int main(int argc, char *argv[]) {
+
+	if (argc < 3) {
+		cout << "Not enough arguments: set args as ./testRun ['turn/drive'] [distance (cm)/angle (degrees)]" << endl;
+	}
+
+	char *action = argv[1];
+
+	int speedInput = atoi(argv[2]);
+
+	float percent = 0.7;
+
+	if (argc > 3){
+		percent = atof(argv[3]);
+	}
+
+	// if (speedInput < 0 || speedInput > 100) {
+	// 	cout << "Speed must be between 0-100" << endl;
+	// 	return -1;
+	// }
+
+	// Value of 1040 is max in forward direction
+	// Value of 1450 and 0 is neutral
+	// Value of 1940 is max in backward direction
+	// float percentSpeed = 450 * (speedInput/100.0);
 
 	libusb_context *ctx = NULL;
 	libusb_device_handle *handle;
@@ -292,16 +315,15 @@ int move (char *data, float dist_angle, float percentSpeed) {
 	}
 
 	r = libusb_claim_interface(handle, 0);
-	// lSpeed has a bias of 5
+
 	if (strcmp(action, "stop") == 0) {
-		startMotors(handle, 0);
+		startMotors(handle, 0);	
 	} else if (strcmp(action, "turn") == 0) {
 		// int angle = 45;
-		printf("%f\n", dist_angle);
-		turn(handle, dist_angle);
+		turn(handle, speedInput);
 	} else if (strcmp(action, "drive") == 0) {
 		// float dist = 30.5;
-		drive(handle, dist_angle, percentSpeed);
+		drive(handle, speedInput, percent);
 	} else {
 		cout << "invalid string" << endl;
 	}
