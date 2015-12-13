@@ -5,7 +5,8 @@
 #include <iostream>
 #include <math.h>       /* floor */
 #include "FSM.h"
-// #include <numeric>
+
+#include <time.h>
 // #include <cmath>
 
 using namespace std;
@@ -145,7 +146,7 @@ void MaxwellStatechart(float driveDistance,
 			output[0] = "turn";
 			output[1] = to_string(degreeToTurn);
 			output[2] = speed;
-			sleep(5000);
+			// _sleep(5000);
 			robotState = MAXWELL_DRIVE;
 
 		case MAXWELL_DRIVE:
@@ -174,25 +175,5 @@ void MaxwellStatechart(float driveDistance,
 
 		break;
 	}
-}
-
-
-int main(int argc, char **argv) {
-	// // return orientation(10.2, 12.5, 16.2);
-	// orient (50, 100, 100, 50, 10, 10); //negative
-
-	// // orient (10, 100, 10, 50, 10, 10); //0
-
-	// orient (0, 100, 0, 50, 10, 10); //positive
-
-	// // orient (0, 10, 0, 0, 10, 10); //positive
-
-	// orient (0, 3, 2, 0, 2, 1); //positive
-
-	orient (0, 3, 2, 0, 2, 1); //positive
-
-	orient (0, 3, 2, 1, 2, 0); //negative
-
-	return 1;
 }
 
