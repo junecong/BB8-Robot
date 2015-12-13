@@ -10,6 +10,9 @@
 #include "FSM.h"
 
 #define MAXQUEUESIZE 32
+#define MAXSIZE 5
+#define MAX_OBJ_DIST_BW_FRAMES 10
+#define ACTUAL_DIAMETER_IN_CM 16.f
 
 using namespace cv;
 using namespace std;
@@ -125,11 +128,19 @@ void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound,
 	}
 }
 
+// <<<<<<< HEAD
+// void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, Point2f prev_center, float *radius, float prev_radius, bool isObject) {
+// =======
+
 // play around with radialBias to tune how big the object is to detect
-void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center,
-				  float *radius, bool isObject, bool *isOffscreen, int bias=10, int radialBias=10) {
+void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > contours, Point2f *center, Point2f prev_center,
+				  float *radius, float prev_radius, bool isObject, bool *isOffscreen, int bias=10, int radialBias=10) {
+// >>>>>>> d87b12943804de132d6747ea7798d7347f1a70fd
 	double largest_area = 0;
 	int contour_index = 0;
+	deque <vector<Point> > largest_contours;
+	int contours_size;
+
 	// if contours exist
 	if (contours.size() > 0) {
 		// find largest area and center
@@ -138,14 +149,44 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 			if (area > largest_area) {
 				largest_area = area;
 				contour_index = i;
+				largest_contours.push_back(contours[i]);
+				contours_size = largest_contours.size();
+				if (contours_size > MAXSIZE){
+					largest_contours.pop_front();
+				}
 			}
 		}
 
-		vector<Point> correctContour = contours[contour_index];
 
-		// Approximate polygon curve with specified position
-		approxPolyDP(Mat(correctContour), correctContour, 3, true);
-		minEnclosingCircle((Mat)correctContour, *center, *radius);
+		// vector<Point> correctContour = contours[contour_index];
+		float min_radius;
+		float max_radius;
+		float avg_radius;
+		float avg_center;
+		float dist_center;
+		float dist_radius;
+		Point2f min_center;
+		Point2f max_center;
+
+
+		for (int i = 0; i < largest_contours.size(); i++){
+			vector<Point> correctContour = largest_contours[i];
+
+			// Approximate polygon curve with specified position
+			approxPolyDP(Mat(correctContour), correctContour, 3, true);
+			minEnclosingCircle((Mat)correctContour, *center, *radius);
+			// maxEnclosingCircle((Mat)correctContour, *center, *radius);
+			// avg_radius = (*min_radius + *max_radius)/2.f;
+			// avg_center = (*min_center + *max_center)/2.f;
+
+			// Filter on movement of the Center
+			dist_center = (norm(*center - prev_center) * ACTUAL_DIAMETER_IN_CM) / (2.0 * (*radius));
+			dist_radius = fabs((*radius - prev_radius) * ACTUAL_DIAMETER_IN_CM) / (2.0 * (*radius));
+			
+			if (dist_center < MAX_OBJ_DIST_BW_FRAMES && dist_radius < MAX_OBJ_DIST_BW_FRAMES){
+				break;
+			}
+		}
 
 		if (*radius > radialBias) {
 			if (isObject) {
@@ -165,17 +206,30 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 						Point circleCenter = Point(cvRound(circles[i][0]), cvRound(circles[i][1]));
 						if (abs(circleCenter.x - (*center).x) < bias && abs(circleCenter.y - (*center).y) < bias) {
 							circle(*frame, *center, 3, Scalar(139, 100, 54), 3, 8, 0);
+// <<<<<<< HEAD
+// 							circle(*frame, *center, *radius, Scalar(0, 255, 0), 2, 8, 0);
+// =======
 							circle(*frame, *center, (int)*radius, Scalar(0, 255, 0), 2, 8, 0);
 							*isOffscreen = true;
+// >>>>>>> d87b12943804de132d6747ea7798d7347f1a70fd
 						}
 					}
 				} else {
 					// might not be object we're looking for
+// <<<<<<< HEAD
+// 					circle(*frame, *center, 3, Scalar(147, 20, 32), 3, 8, 0);
+// 					circle(*frame, *center, *radius, Scalar(0, 0, 255), 2, 8, 0);
+// 				}
+// 			} else {
+// 				circle(*frame, *center, 3, Scalar(255, 101, 255), 3, 8, 0);
+// 				circle(*frame, *center, *radius, Scalar(79, 167, 64), 2, 8, 0);
+// =======
 					circle(*frame, *center, 3, Scalar(0, 0, 255), 3, 8, 0);
 					circle(*frame, *center, (int)*radius, Scalar(0, 0, 255), 2, 8, 0);
 					*isOffscreen = true;
 				}
 				// *isOffscreen = true;
+// >>>>>>> d87b12943804de132d6747ea7798d7347f1a70fd
 			}
 		}
 	}
@@ -306,6 +360,25 @@ int main(int argc, char **argv) {
 	namedWindow("drawing", WINDOW_NORMAL);
 	resizeWindow("drawing", 600, 600);
 
+// <<<<<<< HEAD
+	Point2f objectCenter;
+	Point2f prev_objectCenter = objectCenter;
+	Point2f destCenter;
+	Point2f prev_destCenter = destCenter;
+	float objectRadius;
+	float prev_objectRadius;
+	float destRadius;
+	float prev_destRadius;
+
+	double max_dist = 0;
+	double dist = 0;
+	int count = 0;
+
+	// double avg_radius = 0;
+	// double tot_radius = 0;
+
+// =======
+// >>>>>>> d87b12943804de132d6747ea7798d7347f1a70fd
 	// loop to capture and analyze frames
 	while(1) {
 		string direction = "Stationary";
@@ -336,16 +409,25 @@ int main(int argc, char **argv) {
 
 		// detects the object and draws to the frame
 		// gives the center and radius of the object
-		Point2f objectCenter;
-		Point2f prev_center = objectCenter;
-		float objectRadius = 0;
-		detectObject(&frame, circles, contours, &objectCenter, &objectRadius, true, &isOffscreen);
+// <<<<<<< HEAD
+		detectObject(&frame, circles, contours, &objectCenter, prev_objectCenter, &objectRadius, prev_objectRadius, true, &isOffscreen); 
+		prev_objectCenter = objectCenter; 
+		prev_objectRadius = objectRadius;
+
+		detectObject(&frame, destCircles, destContours, &destCenter, prev_destCenter, &destRadius, prev_destRadius, false, &isOffscreen);
+		prev_destCenter = destCenter;
+		prev_objectRadius = objectRadius;
+// =======
+		// Point2f objectCenter;
+		// Point2f prev_center = objectCenter;
+		// float objectRadius = 0;
+		// detectObject(&frame, circles, contours, &objectCenter, &objectRadius, true, &isOffscreen);
 
 		// detects the destination object and draws to the frame
 		// gives the center and radius of the object
-		Point2f destCenter;
-		float destRadius = 0;
-		detectObject(&frame, destCircles, destContours, &destCenter, &destRadius, false, &isOffscreen);
+		// Point2f destCenter;
+		// float destRadius = 0;
+		// detectObject(&frame, destCircles, destContours, &destCenter, &destRadius, false, &isOffscreen);
 
 		int pt_size = objectPoints.size();
 		int obpt_size = destPoints.size();
@@ -365,6 +447,7 @@ int main(int argc, char **argv) {
 		for (int i = 1; i < pt_size; i++) {
 			line(frame, objectPoints[i - 1], objectPoints[i], Scalar(43,231,123), 6);
 		}
+// >>>>>>> d87b12943804de132d6747ea7798d7347f1a70fd
 
 		// detects direction of object movement
 		detectDirection(&frame, objectPoints, pt_size, &direction);
