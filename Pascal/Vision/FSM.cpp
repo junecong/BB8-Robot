@@ -162,7 +162,7 @@ void MaxwellStatechart(float driveDistance,
 			cout << "MAXWELL_DRIVE" << endl;
 			// forward = true; //you're currently driving forwards
 			output[0] = "drive";
-			output[1] = to_string(driveDistance);
+			output[1] = "5";
 			output[2] = speed;
 			if (direction == "Stationary") {
 				robotState = MAXWELL_ORIENT;
@@ -170,7 +170,7 @@ void MaxwellStatechart(float driveDistance,
 			if (offscreen) {
 				robotState = MAXWELL_OFFSCREEN;
 			}
-			if (driveDistance <= 10) {
+			if (driveDistance <= 75) {
 				robotState = MAXWELL_DONE;
 			} 
 			break;
