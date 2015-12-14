@@ -258,6 +258,54 @@ void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *di
 	putText(*frame, dXdY, Point(10, 450), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
 }
 
+float getMotionAngle (Mat *frame, deque <Point2f> points, int pt_size) {
+	char ang[50] = "";
+
+	if (points.size() > 1) {
+		Point2f diff_point = points[pt_size - 1] - points[pt_size];
+		double angle1 = asin(diff_point.y / norm(diff_point));
+		angle1 = angle1 * 180.f / PI;
+		sprintf(ang, "angle: %f", angle1);
+		putText(*frame, ang, Point(10, 350), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
+		return angle1;		
+	}
+}
+
+// Returns observed drive distance when object is done driving
+float getObservedDriveDist (string prev_direction, string direction, Point2f *startCenter, Point2f objectCenter, float radius, int *lenPath,
+	float *totAngle, float angle) {
+	*lenPath++;
+	*totAngle = *totAngle + angle;
+	if (prev_direction == "Stationary" && direction != "Stationary" && *startCenter==Point2f()){
+		*startCenter = objectCenter;
+		*lenPath = 1;
+		*totAngle = angle;
+		return NULL;
+	}
+	if (prev_direction != "Stationary" && direction == "Stationary" && *startCenter!=Point2f()){
+		float dist = norm(*startCenter - objectCenter);
+		*startCenter = Point2f();
+		return (dist * radius) / ACTUAL_DIAMETER_IN_CM;
+	}
+	return NULL;
+}
+
+float updatePerspectiveAngle (float *perspective, float observedDist, float actualDist, float angle) {
+	if (actualDist != NULL){
+		double psi = acos(observedDist/actualDist);
+		double y = actualDist * sin(psi);
+		double x = observedDist * sin(angle);
+		*perspective = atan2(y,x);
+	}
+}
+
+void getAverageMotionAngle (float *avgAngle, float totAngle, int lenPath) {
+	if (lenPath != 0){
+		*avgAngle = totAngle / lenPath;
+	}
+
+}
+
 float getAverageRadius (deque <float> radii, int radiiSize) {
 	float total = 0;
 	for (int i = 0; i < radiiSize; i++) {
@@ -343,10 +391,22 @@ int analyzeVideo(string output[]) {
 	float destRadius;
 	float prev_destRadius;
 
+	string prev_direction;
+	string direction;
+	Point2f startCenter = Point2f();
+	float dist;
+	float angle;
+	int lenPath;
+	float perspectiveAngle;
+	float avgAngle = 0;
+	float totAngle = 0;
+
+
 	// loop to capture and analyze frames
 	while(1) {
 		messageReady = false;
-		string direction = "Stationary";
+		direction = "Stationary";
+		// string angle = "N/A degrees";
 		bool isOffscreen = true;
 		Mat frame, mask, destMask;
 		cap.read(frame);
@@ -403,8 +463,15 @@ int analyzeVideo(string output[]) {
 			line(frame, objectPoints[i - 1], objectPoints[i], Scalar(43,231,123), 6);
 		}
 
+		prev_direction = direction;
 		// detects direction of object movement
 		detectDirection(&frame, objectPoints, obPt_size, &direction);
+
+		// finds angle of object movement and displays to frame
+		angle = getMotionAngle(&frame, objectPoints, obPt_size);
+
+		// distance observed by camera (in CM)
+		dist = getObservedDriveDist (prev_direction, direction, &startCenter, prev_objectCenter, prev_objectRadius, &lenPath, &totAngle, angle);
 
 		// get averaged center points from object
 		Point2f avgCenterPoint = getAveragePoint(objectPoints, obPt_size);
@@ -419,21 +486,31 @@ int analyzeVideo(string output[]) {
 		float avgDestRadius = getAverageRadius(destRadii, destRadii_size);
 
 		// need to calculate angle and driveDistance
-		float angle = 0.0;
+		// float angle = 0.0;
 		float dx = abs(avgCenterPoint.x - avgDestPoint.x);
 		float dy = abs(avgCenterPoint.y - avgDestPoint.y);
 		float centerDistance = sqrt(dx*dx + dy*dy);
-		float driveDistance = centerDistance - avgObjectRadius - avgDestRadius;
+		// float driveDistance = centerDistance - avgObjectRadius - avgDestRadius;
+		float driveDistance = 
+		driveDistance = driveDistance/ACTUAL_DIAMETER_IN_CM;
+
+		// update average angle with what totAngle is
+		getAverageMotionAngle(&avgAngle, totAngle, lenPath);
+
+		updatePerspectiveAngle(&perspectiveAngle, dist, driveDistance, avgAngle);
 
 		if (debugMode) {
 			cout << endl;
-			cout << "distance left: " << driveDistance << endl;
-			cout << "offscreen: " << isOffscreen << endl;
-			cout << "object point: " << "(" << avgCenterPoint.x << ", " << avgCenterPoint.y << ")" << endl;
-			cout << "object radius: " << avgObjectRadius << endl;
-			cout << "dest point: " << "(" << avgDestPoint.x << ", " << avgDestPoint.y << ")" << endl;
-			cout << "dest radius: " << avgDestRadius << endl;
-			cout << "dircetion: " << direction << endl;
+			// cout << "distance left: " << driveDistance << endl;
+			// cout << "offscreen: " << isOffscreen << endl;
+			// cout << "object point: " << "(" << avgCenterPoint.x << ", " << avgCenterPoint.y << ")" << endl;
+			// cout << "object radius: " << avgObjectRadius << endl;
+			// cout << "dest point: " << "(" << avgDestPoint.x << ", " << avgDestPoint.y << ")" << endl;
+			// cout << "dest radius: " << avgDestRadius << endl;
+			// cout << "direction: " << direction << endl;
+			cout << "perspective angle: " << perspectiveAngle << endl;
+			cout << "observed dist: " << dist << endl;
+			cout << "motion angle: " << angle << endl;
 			cout << endl;
 		}
 
