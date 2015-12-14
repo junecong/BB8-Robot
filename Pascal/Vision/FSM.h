@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <vector>
 
 #define MAXQUEUESIZE 32
 #define MAXSIZE 5
@@ -15,7 +16,7 @@ using namespace std;
 int test();
 void MaxwellStatechartTest(string direction);
 float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx, float desty);
-void MaxwellStatechart(
+vector<string> MaxwellStatechart(
 	float driveDistance,
 	bool isOffscreen,
 	float bbx,
@@ -24,6 +25,5 @@ void MaxwellStatechart(
 	float destx,
 	float desty,
 	float destR,
-	string direction, 
-	string output[]);
+	string direction);
 #endif
