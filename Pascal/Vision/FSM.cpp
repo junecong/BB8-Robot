@@ -159,17 +159,23 @@ vector<string> MaxwellStatechart(float driveDistance,
 				dest_rad_var = destR;
 				cout << "W2 Target < 20!: " << driveDistance << " new BBR: " << newBBRad << " , dest rad: " << dest_rad_var << endl;
 
-				if ((bbx <= destx + 50) && (bbx >= destx - 50)){ //check that newRad is about the same as destR
-					cout << "W2 FIRST CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
-				
-					if ((bby <= desty + 50) && (bby >= desty - 50)){
-						cout << "W2 DONE CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
-				
+					if ((newBBRad <= (destR/3) + 10) && (newBBRad >= (destR/3) - 10)){ //check that newRad is about the same as destR
 						robotState = MAXWELL_DONE;
 						// output.insert(0, "stop");
 						output[0] = "stop";
 					}
-				}
+
+				// if ((bbx <= destx + 50) && (bbx >= destx - 50)){ //check that newRad is about the same as destR
+				// 	cout << "W2 FIRST CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
+				
+				// 	if ((bby <= desty + 50) && (bby >= desty - 50)){
+				// 		cout << "W2 DONE CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
+				
+				// 		robotState = MAXWELL_DONE;
+				// 		// output.insert(0, "stop");
+				// 		output[0] = "stop";
+				// 	}
+				// }
 			}
 			break;
 
@@ -187,23 +193,23 @@ vector<string> MaxwellStatechart(float driveDistance,
 				dest_rad_var = destR;
 				cout << "D Target < 20!: " << driveDistance << " new BBR: " << newBBRad << " , dest rad: " << dest_rad_var << endl;
 				
-				// if ((newBBRad <= destR - 10) && (newBBRad >= destR -40)){ //check that newRad is about the same as destR
-				// 	robotState = MAXWELL_DONE;
-				// 	// output.insert(0, "stop");
-				// 	output[0] = "stop";
-				// }
-
-				if ((bbx <= destx + 50) && (bbx >= destx - 50)){ //check that newRad is about the same as destR
-					cout << "D FIRST CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
-				
-					if ((bby <= desty + 50) && (bby >= desty - 50)){
-						cout << "D DONE CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
-				
-						robotState = MAXWELL_DONE;
-						// output.insert(0, "stop");
-						output[0] = "stop";
-					}
+				if ((newBBRad <= (destR/3) + 10) && (newBBRad >= (destR/3) - 10)){ //check that newRad is about the same as destR
+					robotState = MAXWELL_DONE;
+					// output.insert(0, "stop");
+					output[0] = "stop";
 				}
+				robotState = MAXWELL_IDLE;
+				// if ((bbx <= destx + 50) && (bbx >= destx - 50)){ //check that newRad is about the same as destR
+				// 	cout << "D FIRST CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
+				
+				// 	if ((bby <= desty + 50) && (bby >= desty - 50)){
+				// 		cout << "D DONE CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
+				
+				// 		robotState = MAXWELL_DONE;
+				// 		// output.insert(0, "stop");
+				// 		output[0] = "stop";
+				// 	}
+				// }
 				
 			} else if (offscreen) {
 				robotState = MAXWELL_OFFSCREEN;
