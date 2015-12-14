@@ -9,14 +9,10 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
+#include "../Globals/externals.h"
 #include "motionTrack.h"
 #include "FSM.h"
-#include <chrono>
-
-mutex msg_mutex;
-condition_variable no_message;
-bool messageReady = false;
-bool debugMode = false;
 
 using namespace cv;
 using namespace std;
@@ -24,8 +20,10 @@ using namespace std;
 // calibrate HSV values and save in output file for later use
 void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstream &file) {
 
-    namedWindow("Control", WINDOW_NORMAL); //create a window called "Control"
+	//create a window called "Control"
+    namedWindow("Control", WINDOW_NORMAL);
     resizeWindow("Control", 300, 100);
+
 	// start calibration
 	int iLowH = 0;
 	int iHighH = 179;
@@ -60,9 +58,11 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
 
 	    Mat imgHSV, imgThresholded;
 
-	    cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV
+	    //Convert the captured frame from BGR to HSV
+	    cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV);
 
-	    inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image
+	    //Threshold the image
+	    inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded);
 	      
 	    //morphological opening (removes small objects from the foreground)
 	    erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
@@ -75,7 +75,8 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
 	    *lowerBound = Scalar(iLowH, iLowS, iLowV);
 	    *upperBound = Scalar(iHighH, iHighS, iHighV);
 
-	    imshow("Thresholded Image", imgThresholded); //show the thresholded image
+	    //show the thresholded image
+	    imshow("Thresholded Image", imgThresholded);
 
         if (waitKey(30) >= 0) {
         	file << iLowH << endl;
@@ -95,29 +96,20 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
 void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound,
 				 vector<Vec3f> circles, bool isObject) {
 	Mat gray, blur, hsv_frame;
-	// imshow not supported on intel edison boards
-	// comment out when uploading to board
+
 	// imshow("original frame", frame);
 	GaussianBlur(*frame, blur, Size(11,11), 0, 0);
 	cvtColor(blur, hsv_frame, CV_BGR2HSV);
 	// imshow("hsv image", hsv_frame);
 
+	// mask hsv_frame with upper and lower HSV bounds
 	inRange(hsv_frame, lowerBound, upperBound, *mask);
 
-	// imshow("mask1", mask);
-	// Create a structuring element
-    // int erosion_size = 6;  
- 	// Mat element = getStructuringElement(cv::MORPH_CROSS,
- 	//     cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
- 	//     cv::Point(erosion_size, erosion_size) );
-	// erode(mask, mask, element, Point(-1,-1), 2);
-	// dilate(mask, mask, element, Point(-1,-1), 2);
-
-    //morphological opening (removes small objects from the foreground)
+    // morphological opening (removes small objects from the foreground)
     erode(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
     dilate(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
 
-    //morphological closing (removes small holes from the foreground)
+    // morphological closing (removes small holes from the foreground)
     dilate(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
     erode(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
 
@@ -156,7 +148,6 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 			}
 		}
 
-
 		// vector<Point> correctContour = contours[contour_index];
 		float min_radius;
 		float max_radius;
@@ -166,7 +157,6 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 		float dist_radius;
 		Point2f min_center;
 		Point2f max_center;
-
 
 		for (int i = 0; i < largest_contours.size(); i++){
 			vector<Point> correctContour = largest_contours[i];
@@ -285,16 +275,18 @@ float getObservedDriveDist (string prev_direction, string direction, Point2f *st
 	if (prev_direction != "Stationary" && direction == "Stationary" && *startCenter!=Point2f()){
 		float dist = norm(*startCenter - objectCenter);
 		*startCenter = Point2f();
-		return (dist * radius) / ACTUAL_DIAMETER_IN_CM;
+		return (dist * 2 * radius) / ACTUAL_DIAMETER_IN_CM;
 	}
 	return NULL;
 }
 
 float updatePerspectiveAngle (float *perspective, float observedDist, float actualDist, float angle) {
-	if (actualDist != NULL){
+	if (observedDist != NULL){
 		double psi = acos(observedDist/actualDist);
 		double y = actualDist * sin(psi);
 		double x = observedDist * sin(angle);
+		cout << "numerator for atan2: " << y << endl;
+		cout << "denominator for atan2: " << x << endl;
 		*perspective = atan2(y,x);
 	}
 }
@@ -303,7 +295,6 @@ void getAverageMotionAngle (float *avgAngle, float totAngle, int lenPath) {
 	if (lenPath != 0){
 		*avgAngle = totAngle / lenPath;
 	}
-
 }
 
 float getAverageRadius (deque <float> radii, int radiiSize) {
@@ -352,7 +343,7 @@ void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *f
 }
 
 //default camera at 0
-int analyzeVideo(string output[]) {
+int analyzeVideo() {
 	VideoCapture cap;
 	deque <Point2f> objectPoints;
 	deque <Point2f> destPoints;
@@ -404,9 +395,9 @@ int analyzeVideo(string output[]) {
 
 	// loop to capture and analyze frames
 	while(1) {
-		messageReady = false;
 		direction = "Stationary";
-		// string angle = "N/A degrees";
+		vector<string> output = {"", "", ""};
+
 		bool isOffscreen = true;
 		Mat frame, mask, destMask;
 		cap.read(frame);
@@ -491,7 +482,7 @@ int analyzeVideo(string output[]) {
 		float dy = abs(avgCenterPoint.y - avgDestPoint.y);
 		float centerDistance = sqrt(dx*dx + dy*dy);
 		// float driveDistance = centerDistance - avgObjectRadius - avgDestRadius;
-		float driveDistance = 
+		float driveDistance = 722.85;
 		driveDistance = driveDistance/ACTUAL_DIAMETER_IN_CM;
 
 		// update average angle with what totAngle is
@@ -501,22 +492,22 @@ int analyzeVideo(string output[]) {
 
 		if (debugMode) {
 			cout << endl;
-			// cout << "distance left: " << driveDistance << endl;
-			// cout << "offscreen: " << isOffscreen << endl;
-			// cout << "object point: " << "(" << avgCenterPoint.x << ", " << avgCenterPoint.y << ")" << endl;
-			// cout << "object radius: " << avgObjectRadius << endl;
-			// cout << "dest point: " << "(" << avgDestPoint.x << ", " << avgDestPoint.y << ")" << endl;
-			// cout << "dest radius: " << avgDestRadius << endl;
-			// cout << "direction: " << direction << endl;
+			cout << "distance left: " << driveDistance << endl;
+			cout << "offscreen: " << isOffscreen << endl;
+			cout << "object point: " << "(" << avgCenterPoint.x << ", " << avgCenterPoint.y << ")" << endl;
+			cout << "object radius: " << avgObjectRadius << endl;
+			cout << "dest point: " << "(" << avgDestPoint.x << ", " << avgDestPoint.y << ")" << endl;
+			cout << "dest radius: " << avgDestRadius << endl;
+			cout << "direction: " << direction << endl;
 			cout << "perspective angle: " << perspectiveAngle << endl;
-			cout << "observed dist: " << dist << endl;
+			if (dist != 0){
+				cout << "observed dist: " << dist << endl;
+			}
 			cout << "motion angle: " << angle << endl;
 			cout << endl;
 		}
 
-		// lock mutex to construct message from FSM
-		// lock_guard<std::mutex> lck(msg_mutex);
-		MaxwellStatechart(
+		output = MaxwellStatechart(
 			driveDistance, 			// distance from object to destination
 			isOffscreen, 			// if Object is isOffscreen
 			avgCenterPoint.x, 		// x point of Object
@@ -525,16 +516,16 @@ int analyzeVideo(string output[]) {
 			avgDestPoint.x, 		// x point of Destination
 			avgDestPoint.y, 		// y point of Destination
 			avgDestRadius,			// radius of destination
-			direction,				// direction object is moving
-			output					// output message
+			direction				// direction object is moving
 		);
 
-		cout << "output from motionTrack: "<< output[0] << ", " << output[1] << ", "<< output[2] << endl;
 
+		if (debugMode) {
+			cout << "FSM output: " << output[0] << ", "<< output[1] << ", " << output[2] << endl;
+		}
 
-		// signal main thread that message is done
-		messageReady = true;
-		// no_message.notify_one();
+		// store message to threaded buffer
+		bBuffer.deposit(output);
 
 		// pop object point queue
 		if (obPt_size >= MAXQUEUESIZE) {
@@ -559,12 +550,12 @@ int analyzeVideo(string output[]) {
     	imshow("drawing", frame);
 
 		if (waitKey(30) >= 0) {
+			
 			cap.release();
 			destroyAllWindows();
 			break;
 		}
 	}
-
 	cap.release();
 
 	return 0;

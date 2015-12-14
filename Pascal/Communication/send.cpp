@@ -10,14 +10,13 @@
 #include <mutex>
 #include <condition_variable>
 #include "../Vision/motionTrack.h"
+#include "../Globals/externals.h"
 
 #define PORT 51717
 
-// change ip to ip of device
-// current ip after wifi script, DO NOT CHANGE
-// static char *ip = "192.168.42.1";
+// current ip of Maxwell Board, DO NOT CHANGE
 static char *ip = "192.168.42.1";
-string FSM_message[3];
+BoundedBuffer bBuffer(2);
 
 void error(const char *msg)
 {
@@ -100,6 +99,7 @@ void packMessage(char *data, char *dist_angle, char *percentSpeed, char *str) {
     strcat(str, "*/1");
 }
 
+// main function to send messages to Maxwell board
 void setUpSocket(char *argv1, char *argv2) {
     int sockfd, portno, n;
     struct sockaddr_in serv_addr;
@@ -108,21 +108,27 @@ void setUpSocket(char *argv1, char *argv2) {
     char buffer[256];
 
     char *defaultIp;
-    int defaultPort;
+    int defaultPort = PORT;
 
-    if (argv1 == NULL) {
+    if (localhostMode) {
+        printf("%d\n", "Using localhost and default port: ", PORT);
+        defaultIp = "localhost";
+    } else {
         printf("%s %s %s %d\n", "Using default ip: ", ip, " and default port: ", PORT);
         defaultIp = ip;
-        defaultPort = PORT;
-    } else {
-        defaultIp = argv1;
-        if (argv2 == NULL) {
-            printf("Using default port: 51717...\n");
-            defaultPort = PORT;
-        } else {
-            defaultPort = atoi(argv2);
-        }
     }
+
+    // if (argv1 == NULL) {
+    //     printf("%s %s %s %d\n", "Using default ip: ", ip, " and default port: ", PORT);
+    //     defaultIp = ip;
+    //     defaultPort = PORT;
+    // } else {
+    //     defaultIp = "localhost";
+    //     if (argv2 == NULL) {
+    //         printf("Using default port: 51717...\n");
+    //         defaultPort = PORT;
+    //     }
+    // }
 
     //Set up socket
     portno = defaultPort;
@@ -154,27 +160,34 @@ void setUpSocket(char *argv1, char *argv2) {
         char dist_angle[10];
         memset(dist_angle, 0, strlen(dist_angle));
         char percentSpeed[10];
-        memset(percentSpeed, 0, strlen(percentSpeed));
+        memset(percentSpeed, 0, strlen(percentSpeed));;
 
-        // lock and wait for message from FSM
-        // unique_lock<std::mutex> lck(msg_mutex);
-        // while (!messageReady) {
-        //     no_message.wait(lck);
-        // }
+        if (sendMode) {
+            memset(buffer, 0, strlen(buffer));
+            cout << "input drive command: ";
+            cin  >> buffer;
+            memcpy(data, buffer, strlen(buffer));
+            memset(buffer, 0, strlen(buffer));
+            cout << "input dist/degree command: ";
+            cin  >> buffer;
+            memcpy(dist_angle, buffer, strlen(buffer));
+            memset(buffer, 0, strlen(buffer));
+            cout << "input Speed percent command: ";
+            cin  >> buffer;
+            memcpy(percentSpeed, buffer, strlen(buffer));
 
-        while (!messageReady);
+        } else {
+            // fetch from threaded message buffer 
+            vector<string> message = bBuffer.fetch();
 
-        cout << "output from analyzeVideo: " << FSM_message[0] << ", " << FSM_message[1] << ", " << FSM_message[2] << endl;
-
-        // create packet 
-        FSM_message[0].copy(data, FSM_message[0].size());
-        FSM_message[1].copy(dist_angle, FSM_message[1].size());
-        FSM_message[2].copy(percentSpeed, FSM_message[2].size());
-        cout << "output after storing to arrays: " << FSM_message[0] << ", " << FSM_message[1] << ", " << FSM_message[2] << endl;
+            // create packet 
+            message[0].copy(data, message[0].size());
+            message[1].copy(dist_angle, message[1].size());
+            message[2].copy(percentSpeed, message[2].size());
+        }
         char packet[256];
         memset(packet, 0, strlen(packet));
         packMessage(data, dist_angle, percentSpeed, packet);
-        cout << "output from packMessage: " << packet << endl;
 
         // send data packet
         n = write(sockfd, packet, strlen(packet) + 1);
@@ -183,29 +196,32 @@ void setUpSocket(char *argv1, char *argv2) {
             error("ERROR writing to socket");
         }
 
-        memset(buffer, 0, 256);
-        n = read(sockfd, buffer, 255);
-
-        cout << buffer << endl;
-
-        if (n < 0) {
-            error("ERROR reading from socket");
-        }
-
-        if (strcmp(buffer, "done") == 0) {
-            break;
-        }
     }
     close(sockfd);
 }
 
 int main(int argc, char *argv[]) {
-    // thread to analyze video
-    thread t1(analyzeVideo, FSM_message);
-    // thread to send message
-    thread t2(setUpSocket, argv[1], argv[2]);
+    if (argc > 1) {
+        for (int i = 0; i < argc; i++) {
+            if (strcmp(argv[i], "localhost") == 0) {
+                localhostMode = true;
+            }
+            if (strcmp(argv[i], "-f") == 0) {
+                debugMode = true;
+            }
+            if (strcmp(argv[i], "-s") == 0) {
+                sendMode = true;
+            }
+        }
+    }
+
+    // run message send thread
+    thread t1(setUpSocket, argv[1], argv[2]);
+
+    if (!sendMode) {
+        analyzeVideo();
+    }
     t1.join();
-    t2.join();
 
     return 0;
 }

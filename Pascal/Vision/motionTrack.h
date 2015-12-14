@@ -11,6 +11,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include "../Globals/externals.h"
 #include "FSM.h"
 
 #define PI 3.14159265
@@ -18,11 +19,6 @@
 #define MAXSIZE 5
 #define MAX_OBJ_DIST_BW_FRAMES 10
 #define ACTUAL_DIAMETER_IN_CM 23.7
-
-extern mutex msg_mutex;
-extern condition_variable no_message;
-extern bool messageReady;
-extern bool debugMode;
 
 using namespace cv;
 using namespace std;
@@ -40,5 +36,5 @@ float updatePerspectiveAngle (float *perspective, float observedDist, float actu
 void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *fileName);
 Point2f getAveragePoint (deque <Point2f> center, float size);
 float getAverageRadius (deque <float> radii, int radiiSize);
-int analyzeVideo(string output[]);
+int analyzeVideo();
 #endif
