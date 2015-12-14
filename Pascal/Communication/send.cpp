@@ -195,12 +195,10 @@ void setUpSocket(char *argv1, char *argv2) {
 }
 
 int main(int argc, char *argv[]) {
-    // thread to analyze video
-    thread t1(analyzeVideo, FSM_message);
+    analyzeVideo(FSM_message);
     // thread to send message
-    thread t2(setUpSocket, argv[1], argv[2]);
+    thread t1(setUpSocket, argv[1], argv[2]);
     t1.join();
-    t2.join();
 
     return 0;
 }

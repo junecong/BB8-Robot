@@ -103,10 +103,6 @@ vector<string> MaxwellStatechart(float driveDistance,
 			break;
 		case MAXWELL_ORIENT:
 			cout << "MAXWELL_ORIENT" << endl;
-			if (offscreen) {
-				//TODO: Improve this
-				robotState = MAXWELL_OFFSCREEN; 
-			}
 			switch(subState){
 				case ORIENT_IDLE:
 					cout << "ORIENT_IDLE" << endl;
@@ -125,7 +121,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 					// output.insert(1, "5");
 					// output.insert(2, speed);
 					output[0] = "drive";
-					output[1] = "5";
+					output[1] = "10";
 					output[2] = speed;
 					
 					subState = ORIENT_WAIT;
@@ -133,9 +129,9 @@ vector<string> MaxwellStatechart(float driveDistance,
 					
 				case ORIENT_WAIT:
 					cout << "ORIENT_WAIT" << endl;
-					if (direction == "Stationary") {
+					// if (direction == "Stationary") {
 						subState = ORIENT_FINISHED;
-					}
+					// }
 					break;
 
 				case ORIENT_FINISHED:	
@@ -180,6 +176,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 
 		case MAXWELL_DRIVE:
 			cout << "MAXWELL_DRIVE" << endl;
+			driveDistance = driveDistance/2;
 			driveDistanceStr = to_string(driveDistance);
 			// output.insert(0, "drive");
 			// output.insert(1, driveDistanceStr);
@@ -190,9 +187,16 @@ vector<string> MaxwellStatechart(float driveDistance,
 			cout << "Dist to target: " << driveDistance << endl;
 			
 			if (driveDistance <= 10) {
-				robotState = MAXWELL_DONE;
-				// output.insert(0, "stop");
-				output[0] = "stop";
+				newBBRad = bbR;
+				dest_rad_var = destR;
+				cout << "Target < 10!: " << driveDistance << " new BBR: " << newBBRad << " , dest rad: " << dest_rad_var << endl;
+				
+				if ((newBBRad <= destR - 10) && (newBBRad >= destR -40)){ //check that newRad is about the same as destR
+					robotState = MAXWELL_DONE;
+					// output.insert(0, "stop");
+					output[0] = "stop";
+				}
+				
 			} else if (offscreen) {
 				robotState = MAXWELL_OFFSCREEN;
 			} else {
@@ -231,7 +235,8 @@ vector<string> MaxwellStatechart(float driveDistance,
 			// output.insert(0, "exit");
 			output[0] = "exit";
 
-		break;
+			break;
+
 	}
 	return output;
 }
