@@ -1,13 +1,11 @@
-// State Machine (untested)
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include <math.h>       /* floor */
+#include <math.h>
 #include "FSM.h"
-
 #include <time.h>
-// #include <cmath>
+#include "../Globals/externals.h"
 
 using namespace std;
 
@@ -117,9 +115,6 @@ vector<string> MaxwellStatechart(float driveDistance,
 
 				case ORIENT_INITIAL_FORWARD:
 					cout << "ORIENT_INITIAL_FORWARD" << endl;
-					// output.insert(0, "drive");
-					// output.insert(1, "5");
-					// output.insert(2, speed);
 					output[0] = "drive";
 					output[1] = "10";
 					output[2] = speed;
@@ -156,9 +151,6 @@ vector<string> MaxwellStatechart(float driveDistance,
 		case MAXWELL_TURN:
 			cout << "MAXWELL_TURN" << endl;
 			degreeToTurnStr = to_string(degreeToTurn);
-			// output.insert(0, "turn");
-			// output.insert(1, degreeToTurnStr);
-			// output.insert(2, speed);
 			output[0] = "turn";
 			output[1] = degreeToTurnStr;
 			output[2] = speed;
@@ -178,9 +170,6 @@ vector<string> MaxwellStatechart(float driveDistance,
 			cout << "MAXWELL_DRIVE" << endl;
 			driveDistance = driveDistance/2;
 			driveDistanceStr = to_string(driveDistance);
-			// output.insert(0, "drive");
-			// output.insert(1, driveDistanceStr);
-			// output.insert(2, speed);
 			output[0] = "drive";
 			output[1] = driveDistanceStr;
 			output[2] = speed;
@@ -207,7 +196,6 @@ vector<string> MaxwellStatechart(float driveDistance,
 
 		case MAXWELL_OFFSCREEN:
 			cout << "MAXWELL_OFFSCREEN" << endl;
-			// output.insert(0, "stop");
 			output[0] = "stop";
 			// robotState = MAXWELL_ORIENT;
 			if (!offscreen) {
@@ -219,9 +207,6 @@ vector<string> MaxwellStatechart(float driveDistance,
 
 		case MAXWELL_TURN_180:
 			cout << "MAXWELL_TURN_180" << endl;
-			// output.insert(0, "turn");
-			// output.insert(1, "180");
-			// output.insert(2, speed);
 			output[0] = "turn";
 			output[1] = "180";
 			output[2] = speed;
@@ -232,9 +217,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 		case MAXWELL_DONE:
 			cout << "MAXWELL_DONE" << endl;
 			cout << "Dist to target: " << driveDistance << endl;
-			// output.insert(0, "exit");
 			output[0] = "exit";
-
 			break;
 
 	}

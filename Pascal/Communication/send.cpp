@@ -10,15 +10,15 @@
 #include <mutex>
 #include <condition_variable>
 #include "../Vision/motionTrack.h"
+#include "../Globals/externals.h"
 
 #define PORT 51717
 
-// change ip to ip of device
-// current ip after wifi script, DO NOT CHANGE
-// static char *ip = "192.168.42.1";
+// current ip of Maxwell Board, DO NOT CHANGE
 static char *ip = "192.168.42.1";
-vector<string> FSM_message = {"", "", ""};
+bool localhostMode = false;
 bool sendMode = false;
+BoundedBuffer bBuffer(2);
 
 void error(const char *msg)
 {
@@ -101,6 +101,7 @@ void packMessage(char *data, char *dist_angle, char *percentSpeed, char *str) {
     strcat(str, "*/1");
 }
 
+// main function to send messages to Maxwell board
 void setUpSocket(char *argv1, char *argv2) {
     int sockfd, portno, n;
     struct sockaddr_in serv_addr;
@@ -109,21 +110,27 @@ void setUpSocket(char *argv1, char *argv2) {
     char buffer[256];
 
     char *defaultIp;
-    int defaultPort;
+    int defaultPort = PORT;
 
-    if (argv1 == NULL) {
+    if (localhostMode) {
+        printf("%d\n", "Using localhost and default port: ", PORT);
+        defaultIp = "localhost";
+    } else {
         printf("%s %s %s %d\n", "Using default ip: ", ip, " and default port: ", PORT);
         defaultIp = ip;
-        defaultPort = PORT;
-    } else {
-        defaultIp = "localhost";
-        if (argv2 == NULL) {
-            printf("Using default port: 51717...\n");
-            defaultPort = PORT;
-        } else {
-            defaultPort = PORT;
-        }
     }
+
+    // if (argv1 == NULL) {
+    //     printf("%s %s %s %d\n", "Using default ip: ", ip, " and default port: ", PORT);
+    //     defaultIp = ip;
+    //     defaultPort = PORT;
+    // } else {
+    //     defaultIp = "localhost";
+    //     if (argv2 == NULL) {
+    //         printf("Using default port: 51717...\n");
+    //         defaultPort = PORT;
+    //     }
+    // }
 
     //Set up socket
     portno = defaultPort;
@@ -155,15 +162,7 @@ void setUpSocket(char *argv1, char *argv2) {
         char dist_angle[10];
         memset(dist_angle, 0, strlen(dist_angle));
         char percentSpeed[10];
-        memset(percentSpeed, 0, strlen(percentSpeed));
-
-        // lock and wait for message from FSM
-        // unique_lock<std::mutex> lck(msg_mutex);
-        // while (!messageReady) {
-        //     no_message.wait(lck);
-        // }
-
-        // while (!messageReady);
+        memset(percentSpeed, 0, strlen(percentSpeed));;
 
         if (sendMode) {
             memset(buffer, 0, strlen(buffer));
@@ -180,7 +179,7 @@ void setUpSocket(char *argv1, char *argv2) {
             memcpy(percentSpeed, buffer, strlen(buffer));
 
         } else {
-
+            // fetch from threaded message buffer 
             vector<string> message = bBuffer.fetch();
 
             // create packet 
@@ -210,18 +209,25 @@ void setUpSocket(char *argv1, char *argv2) {
 
 int main(int argc, char *argv[]) {
     if (argc > 1) {
-        if (strcmp(argv[1], "-f") == 0) {
-            debugMode = true;
-        } else if (strcmp(buffer, "-s") == 0) {
-            sendMode = true;
+        for (int i = 0; i < argc; i++) {
+            if (strcmp(argv[i], "localhost") == 0) {
+                localhostMode = true;
+            }
+            if (strcmp(argv[i], "-f") == 0) {
+                debugMode = true;
+            }
+            if (strcmp(argv[i], "-s") == 0) {
+                sendMode = true;
+            }
         }
     }
+
+    // run message send thread
     thread t1(setUpSocket, argv[1], argv[2]);
+
     if (!sendMode) {
-        analyzeVideo(FSM_message);
+        analyzeVideo();
     }
-    // thread to send message
-    // thread t1(setUpSocket, argv[1], argv[2]);
     t1.join();
 
     return 0;

@@ -9,15 +9,15 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
+#include "../Globals/externals.h"
 #include "motionTrack.h"
 #include "FSM.h"
-#include <chrono>
 
-bool messageReady = false;
 bool debugMode = false;
-bool global_Need_ToExit = false;
+// bool global_Need_ToExit = false;
 
-BoundedBuffer bBuffer(1);
+// BoundedBuffer bBuffer(1);
 
 using namespace cv;
 using namespace std;
@@ -305,7 +305,7 @@ void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *f
 }
 
 //default camera at 0
-int analyzeVideo(vector<string> output) {
+int analyzeVideo() {
 	VideoCapture cap;
 	deque <Point2f> objectPoints;
 	deque <Point2f> destPoints;
@@ -346,7 +346,7 @@ int analyzeVideo(vector<string> output) {
 
 	// loop to capture and analyze frames
 	while(1) {
-		messageReady = false;
+		vector<string> output = {"", "", ""};
 		string direction = "Stationary";
 		bool isOffscreen = true;
 		Mat frame, mask, destMask;
@@ -434,14 +434,9 @@ int analyzeVideo(vector<string> output) {
 			cout << "object radius: " << avgObjectRadius << endl;
 			cout << "dest point: " << "(" << avgDestPoint.x << ", " << avgDestPoint.y << ")" << endl;
 			cout << "dest radius: " << avgDestRadius << endl;
-			cout << "dircetion: " << direction << endl;
+			cout << "direction: " << direction << endl;
 			cout << endl;
 		}
-
-		// lock mutex to construct message from FSM
-		// lock_guard<std::mutex> lck(msg_mutex);
-
-		// output.clear();
 
 		output = MaxwellStatechart(
 			driveDistance, 			// distance from object to destination
@@ -460,11 +455,8 @@ int analyzeVideo(vector<string> output) {
 			cout << "FSM output: " << output[0] << ", "<< output[1] << ", " << output[2] << endl;
 		}
 
+		// store message to threaded buffer
 		bBuffer.deposit(output);
-
-		// signal main thread that message is done
-		messageReady = true;
-		// no_message.notify_one();
 
 		// pop object point queue
 		if (obPt_size >= MAXQUEUESIZE) {
@@ -488,15 +480,12 @@ int analyzeVideo(vector<string> output) {
 
     	imshow("drawing", frame);
 
-		if (waitKey(30) >= 0 || global_Need_ToExit) {
-			cout <<"akdjaslkjdlkasjdlkasjdlkajdlkaljd" << endl;
-			global_Need_ToExit = true;
+		if (waitKey(30) >= 0) {
 			cap.release();
 			destroyAllWindows();
 			break;
 		}
 	}
-	global_Need_ToExit = true;
 	cap.release();
 
 	return 0;

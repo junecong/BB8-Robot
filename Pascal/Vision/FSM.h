@@ -1,15 +1,10 @@
-#ifndef FSM
-#define FSM
+#ifndef FSM_H
+#define FSM_H
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
-
-#define MAXQUEUESIZE 32
-#define MAXSIZE 5
-#define MAX_OBJ_DIST_BW_FRAMES 10
-#define ACTUAL_DIAMETER_IN_CM 16.f
 
 using namespace std;
 

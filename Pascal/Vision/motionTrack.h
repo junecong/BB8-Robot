@@ -11,6 +11,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include "../Globals/externals.h"
 #include "FSM.h"
 
 #define MAXQUEUESIZE 32
@@ -18,62 +19,60 @@
 #define MAX_OBJ_DIST_BW_FRAMES 10
 #define ACTUAL_DIAMETER_IN_CM 16.f
 
-extern bool debugMode;
-extern int numThreadsFinished;
-extern bool global_Need_ToExit;
+// extern bool debugMode;
+// extern bool global_Need_ToExit;
 
 using namespace cv;
 using namespace std;
 
-struct BoundedBuffer {
-    vector<vector<string> > buffer;
-    int capacity;
+// struct BoundedBuffer {
+//     vector<vector<string> > buffer;
+//     int capacity;
 
-    int front;
-    int rear;
-    int count;
+//     int front;
+//     int rear;
+//     int count;
 
-    std::mutex lock;
+//     std::mutex lock;
 
-    std::condition_variable not_full;
-    std::condition_variable not_empty;
+//     std::condition_variable not_full;
+//     std::condition_variable not_empty;
 
-    BoundedBuffer(int capacity) : capacity(capacity), front(0), rear(0), count(0) {
-        buffer.resize(capacity);
-    }
+//     BoundedBuffer(int capacity) : capacity(capacity), front(0), rear(0), count(0) {
+//         buffer.resize(capacity);
+//     }
 
-    ~BoundedBuffer(){
-    	buffer.clear();
-    }
+//     ~BoundedBuffer(){
+//     	buffer.clear();
+//     }
 
-    void deposit(vector<string> data){
-        std::unique_lock<std::mutex> l(lock);
-        cout << "in deposit: " << data[0] <<" , " << data[1] << " , "  << data[2] << endl;
-        not_full.wait(l, [this](){return count != capacity; });
+//     void deposit(vector<string> data){
+//         std::unique_lock<std::mutex> l(lock);
+//         not_full.wait(l, [this](){return count != capacity; });
 
-        buffer[rear] = data;
-        rear = (rear + 1) % capacity;
-        ++count;
+//         buffer[rear] = data;
+//         rear = (rear + 1) % capacity;
+//         ++count;
 
-        not_empty.notify_one();
-    }
+//         not_empty.notify_one();
+//     }
 
-    vector<string> fetch(){
-        std::unique_lock<std::mutex> l(lock);
+//     vector<string> fetch(){
+//         std::unique_lock<std::mutex> l(lock);
 
-        not_empty.wait(l, [this](){return count != 0; });
+//         not_empty.wait(l, [this](){return count != 0; });
 
-        vector<string> result = buffer[front];
-        front = (front + 1) % capacity;
-        --count;
+//         vector<string> result = buffer[front];
+//         front = (front + 1) % capacity;
+//         --count;
 
-        not_full.notify_one();
+//         not_full.notify_one();
 
-        return result;
-    }
-};
+//         return result;
+//     }
+// };
 
-extern BoundedBuffer bBuffer;
+// extern BoundedBuffer bBuffer;
 
 void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstream &file);
 void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound,
@@ -84,5 +83,5 @@ void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *di
 void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *fileName);
 Point2f getAveragePoint (deque <Point2f> center, float size);
 float getAverageRadius (deque <float> radii, int radiiSize);
-int analyzeVideo(vector<string> output);
+int analyzeVideo();
 #endif
