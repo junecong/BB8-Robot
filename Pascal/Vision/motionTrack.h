@@ -31,7 +31,7 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *direction, int x_bias=10, int y_bias=10);
 float getMotionAngle (Mat *frame, deque <Point2f> points, int pt_size);
 float getObservedDriveDist (string prev_direction, string direction, Point2f *startCenter, Point2f objectCenter, float radius, int *lenPath,
-	float *totAngle, float angle);
+	float *totAngle, float angle, float avgAngle, float angleBias = 15);
 float updatePerspectiveAngle (float *perspective, float observedDist, float actualDist, float *totAngle, float angle, int lenPath);
 void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *fileName);
 Point2f getAveragePoint (deque <Point2f> center, float size);

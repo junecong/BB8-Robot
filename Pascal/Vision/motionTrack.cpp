@@ -250,7 +250,6 @@ void detectDirection(Mat *frame, deque <Point2f> points, int pt_size, string *di
 
 float getMotionAngle (Mat *frame, deque <Point2f> points, int pt_size) {
 	char ang[50] = "";
-
 	if (points.size() > 1) {
 		Point2f diff_point = points[pt_size - 1] - points[pt_size];
 		double angle1 = asin(diff_point.y / norm(diff_point));
@@ -263,38 +262,55 @@ float getMotionAngle (Mat *frame, deque <Point2f> points, int pt_size) {
 
 // Returns observed drive distance when object is done driving
 float getObservedDriveDist (string prev_direction, string direction, Point2f *startCenter, Point2f objectCenter, float radius, int *lenPath,
-	float *totAngle, float angle) {
-	*lenPath++;
-	*totAngle = *totAngle + angle;
+	float *totAngle, float angle, float avgAngle, float angleBias) {
 	if (prev_direction == "Stationary" && direction != "Stationary" && *startCenter==Point2f()){
+		cout << "Made it to the initializer case!" << endl;
 		*startCenter = objectCenter;
-		*lenPath = 1;
-		*totAngle = angle;
+		if (angle != angle){
+			*lenPath = 0;
+			*totAngle = 0;
+		}else{
+			*lenPath = 1;
+			*totAngle = angle;
+		}
 		return NULL;
 	}
 	if (prev_direction != "Stationary" && direction == "Stationary" && *startCenter!=Point2f()){
 		float dist = norm(*startCenter - objectCenter);
 		*startCenter = Point2f();
-		return (dist * 2 * radius) / ACTUAL_DIAMETER_IN_CM;
+		cout << "Made it to the end case!" << endl;
+		float dist_in_CM = (dist * ACTUAL_DIAMETER_IN_CM) / (2 * radius);
+		cout << "Dist found was: " << dist_in_CM << endl;
+		return dist_in_CM;
+	}
+	if (fabs(avgAngle - angle <= angleBias) && *startCenter!=Point2f()){
+		*totAngle = *totAngle + angle;
+		*lenPath = *lenPath + 1;
 	}
 	return NULL;
 }
 
 float updatePerspectiveAngle (float *perspective, float observedDist, float actualDist, float angle) {
 	if (observedDist != NULL){
+		cout << "observedDist: " << observedDist << endl;
+		cout << "actualDist: " << actualDist << endl;
+		cout << "avg angle from horizontal: " << angle << endl;
 		double psi = acos(observedDist/actualDist);
 		double y = actualDist * sin(psi);
 		double x = observedDist * sin(angle);
+		x = fabs(x);
 		cout << "numerator for atan2: " << y << endl;
 		cout << "denominator for atan2: " << x << endl;
-		*perspective = atan2(y,x);
+		*perspective = (atan2(y,x) * 180) / PI;
 	}
 }
 
 void getAverageMotionAngle (float *avgAngle, float totAngle, int lenPath) {
 	if (lenPath != 0){
 		*avgAngle = totAngle / lenPath;
+		return;
 	}
+	*avgAngle = 0;
 }
 
 float getAverageRadius (deque <float> radii, int radiiSize) {
@@ -382,13 +398,13 @@ int analyzeVideo() {
 	float destRadius;
 	float prev_destRadius;
 
-	string prev_direction;
-	string direction;
+	string prev_direction = "Stationary";
+	string direction = "Stationary";
 	Point2f startCenter = Point2f();
 	float dist;
 	float angle;
-	int lenPath;
-	float perspectiveAngle;
+	int lenPath=0;
+	float perspectiveAngle = 45;
 	float avgAngle = 0;
 	float totAngle = 0;
 
@@ -454,15 +470,17 @@ int analyzeVideo() {
 			line(frame, objectPoints[i - 1], objectPoints[i], Scalar(43,231,123), 6);
 		}
 
-		prev_direction = direction;
+
 		// detects direction of object movement
 		detectDirection(&frame, objectPoints, obPt_size, &direction);
 
 		// finds angle of object movement and displays to frame
 		angle = getMotionAngle(&frame, objectPoints, obPt_size);
 
+		cout << "previous direction: " << prev_direction << endl;
 		// distance observed by camera (in CM)
-		dist = getObservedDriveDist (prev_direction, direction, &startCenter, prev_objectCenter, prev_objectRadius, &lenPath, &totAngle, angle);
+		dist = getObservedDriveDist (prev_direction, direction, &startCenter, prev_objectCenter, prev_objectRadius, &lenPath, &totAngle, angle, avgAngle);
+		prev_direction = direction;
 
 		// get averaged center points from object
 		Point2f avgCenterPoint = getAveragePoint(objectPoints, obPt_size);
@@ -482,7 +500,7 @@ int analyzeVideo() {
 		float dy = abs(avgCenterPoint.y - avgDestPoint.y);
 		float centerDistance = sqrt(dx*dx + dy*dy);
 		// float driveDistance = centerDistance - avgObjectRadius - avgDestRadius;
-		float driveDistance = 722.85;
+		float driveDistance = 829.5;
 		driveDistance = driveDistance/ACTUAL_DIAMETER_IN_CM;
 
 		// update average angle with what totAngle is
@@ -503,7 +521,11 @@ int analyzeVideo() {
 			if (dist != 0){
 				cout << "observed dist: " << dist << endl;
 			}
+			cout << "start point: " << "(" << startCenter.x << ", " << startCenter.y << ")" << endl;
 			cout << "motion angle: " << angle << endl;
+			cout << "lenPath: " << lenPath << endl;
+			cout << "average angle: " << avgAngle << endl;
+			cout << "total angle: " << totAngle << endl;
 			cout << endl;
 		}
 
