@@ -13,12 +13,11 @@
 #include "FSM.h"
 #include <chrono>
 
-mutex msg_mutex;
-condition_variable no_message;
 bool messageReady = false;
 bool debugMode = false;
+bool global_Need_ToExit = false;
 
-BoundedBuffer bBuffer(5);
+BoundedBuffer bBuffer(1);
 
 using namespace cv;
 using namespace std;
@@ -456,7 +455,6 @@ int analyzeVideo(vector<string> output) {
 			direction				// direction object is moving
 		);
 
-		cout << "here" << endl;
 		bBuffer.deposit(output);
 
 		// signal main thread that message is done
@@ -485,13 +483,15 @@ int analyzeVideo(vector<string> output) {
 
     	imshow("drawing", frame);
 
-		if (waitKey(30) >= 0) {
+		if (waitKey(30) >= 0 || global_Need_ToExit) {
+			cout <<"akdjaslkjdlkasjdlkasjdlkajdlkaljd" << endl;
+			global_Need_ToExit = true;
 			cap.release();
 			destroyAllWindows();
 			break;
 		}
 	}
-
+	global_Need_ToExit = true;
 	cap.release();
 
 	return 0;

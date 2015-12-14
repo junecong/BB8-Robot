@@ -18,9 +18,8 @@
 #define MAX_OBJ_DIST_BW_FRAMES 10
 #define ACTUAL_DIAMETER_IN_CM 16.f
 
-extern mutex msg_mutex;
-extern condition_variable no_message;
-extern bool messageReady;
+extern int numThreadsFinished;
+extern bool global_Need_ToExit;
 
 using namespace cv;
 using namespace std;

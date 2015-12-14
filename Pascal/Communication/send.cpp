@@ -185,19 +185,12 @@ void setUpSocket(char *argv1, char *argv2) {
             error("ERROR writing to socket");
         }
 
-        // memset(buffer, 0, 256);
-        // n = read(sockfd, buffer, 255);
-
-        // cout << buffer << endl;
-
-        // if (n < 0) {
-        //     error("ERROR reading from socket");
-        // }
-
-        // if (strcmp(buffer, "done") == 0) {
+        // if (global_Need_ToExit) {
+        //   cout << "here now alskdjalksjd" << endl;
         //     break;
         // }
     }
+    // global_Need_ToExit = true;
     close(sockfd);
 }
 
