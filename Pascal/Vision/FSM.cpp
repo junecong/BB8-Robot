@@ -170,6 +170,10 @@ vector<string> MaxwellStatechart(float driveDistance,
 					if (direction == "Stationary") {
 						subState = ORIENT_FINISHED;
 					}
+					if (!offscreen){
+						robotState = MAXWELL_OFFSCREEN;
+						subState = ORIENT_IDLE;
+					}
 					break;
 
 				case ORIENT_FINISHED:	
