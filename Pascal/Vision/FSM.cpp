@@ -106,6 +106,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 			switch(subState){
 				case ORIENT_IDLE:
 					cout << "ORIENT_IDLE" << endl;
+					cout << "Storing Old Values: OG: " << ogBBx << " , "<< ogBBy << " DEST: "<< dest_x_var << " , "<< dest_y_var <<endl;
 					ogBBx = bbx;
 					ogBBy = bby;
 					ogBBRad = bbR;
@@ -129,13 +130,14 @@ vector<string> MaxwellStatechart(float driveDistance,
 					
 				case ORIENT_WAIT:
 					cout << "ORIENT_WAIT" << endl;
-					// if (direction == "Stationary") {
+					if (direction == "Stationary") {
 						subState = ORIENT_FINISHED;
-					// }
+					}
 					break;
 
 				case ORIENT_FINISHED:	
 					cout << "ORIENT_FINISHED" << endl;
+					cout << "new Values: xy: " << newBBx << " , "<< newBBy <<endl;
 					newBBx = bbx;
 					newBBy = bby;
 					newBBRad = bbR;
@@ -172,6 +174,24 @@ vector<string> MaxwellStatechart(float driveDistance,
 			if (direction == "Stationary") {
 				robotState = MAXWELL_DRIVE;
 			}
+
+			if (driveDistance <= 50) {
+				newBBRad = bbR;
+				dest_rad_var = destR;
+				cout << "W2 Target < 20!: " << driveDistance << " new BBR: " << newBBRad << " , dest rad: " << dest_rad_var << endl;
+
+				if ((bbx <= destx + 50) && (bbx >= destx - 50)){ //check that newRad is about the same as destR
+					cout << "W2 FIRST CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
+				
+					if ((bby <= desty + 50) && (bby >= desty - 50)){
+						cout << "W2 DONE CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
+				
+						robotState = MAXWELL_DONE;
+						// output.insert(0, "stop");
+						output[0] = "stop";
+					}
+				}
+
 			break;
 
 		case MAXWELL_DRIVE:
@@ -186,15 +206,27 @@ vector<string> MaxwellStatechart(float driveDistance,
 			output[2] = speed;
 			cout << "Dist to target: " << driveDistance << endl;
 			
-			if (driveDistance <= 10) {
+			if (driveDistance <= 50) {
 				newBBRad = bbR;
 				dest_rad_var = destR;
-				cout << "Target < 10!: " << driveDistance << " new BBR: " << newBBRad << " , dest rad: " << dest_rad_var << endl;
+				cout << "D Target < 20!: " << driveDistance << " new BBR: " << newBBRad << " , dest rad: " << dest_rad_var << endl;
 				
-				if ((newBBRad <= destR - 10) && (newBBRad >= destR -40)){ //check that newRad is about the same as destR
-					robotState = MAXWELL_DONE;
-					// output.insert(0, "stop");
-					output[0] = "stop";
+				// if ((newBBRad <= destR - 10) && (newBBRad >= destR -40)){ //check that newRad is about the same as destR
+				// 	robotState = MAXWELL_DONE;
+				// 	// output.insert(0, "stop");
+				// 	output[0] = "stop";
+				// }
+
+				if ((bbx <= destx + 50) && (bbx >= destx - 50)){ //check that newRad is about the same as destR
+					cout << "D FIRST CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
+				
+					if ((bby <= desty + 50) && (bby >= desty - 50)){
+						cout << "D DONE CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
+				
+						robotState = MAXWELL_DONE;
+						// output.insert(0, "stop");
+						output[0] = "stop";
+					}
 				}
 				
 			} else if (offscreen) {
