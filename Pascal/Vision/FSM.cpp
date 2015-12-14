@@ -48,16 +48,16 @@ float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx,
 	angleRad = acos ( num / denom );
 	angleDegree = (angleRad *180)/M_PI ;
 	turn = (oldNewVector[0]*oldDestVector[1]) - (oldNewVector[1]*oldDestVector[0]);
-	if (turn > 0) {
+	if (turn < 0) {
 		angleDegree = -angleDegree;
 	} 
 
 	if (isnan(angleDegree)){
-		cout << "Orient angle NAN"<< endl;
+		// cout << "Orient angle NAN"<< endl;
 		angleDegree = 0;
 	}
-	cout << "Orient Function input: " << ogBBx << " , " << ogBBy << " , " << newBBx << " , "  << newBBy << " , " << destx << " , " << desty << endl;
-	cout << "Orient Function Called: " << angleDegree << endl;
+	// cout << "Orient Function input: " << ogBBx << " , " << ogBBy << " , " << newBBx << " , "  << newBBy << " , " << destx << " , " << desty << endl;
+	// cout << "Orient Function Called: " << angleDegree << endl;
 
 	// if (angle < 5){ //low angle camera
 	// 	if (angleDegree > 30){
@@ -104,17 +104,19 @@ vector<string> MaxwellStatechart(float driveDistance,
 	static string driveDistanceStr;
 	static float driveDistancealmostStr;
 
+
 	switch(robotState){
+		usleep(10000);
 		case MAXWELL_IDLE:
 			cout << "MAXWELL_IDLE (waiting state)" << endl;
 			cout << " " << endl;
 			if (direction == "Stationary") {
 
 				if (bbx != 0 && bby != 0 && !isnan(bbx) && !isnan(bby)){
-					cout << "IDLE NOT 0: " << bbx << " , " << bby << endl;
+					// cout << "IDLE NOT 0: " << bbx << " , " << bby << endl;
 					robotState = MAXWELL_ORIENT;
 				}
-				cout << "IDLE IS 0" << endl;
+				// cout << "IDLE IS 0" << endl;
 			}
 			break;
 		case MAXWELL_ORIENT:
@@ -132,7 +134,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 							dest_x_var = desty;
 							dest_y_var = destx;
 							dest_rad_var = destR;
-							cout << "Storing Old Values: OG: " << ogBBx << " , "<< ogBBy << " DEST: "<< dest_x_var << " , "<< dest_y_var <<endl;
+							// cout << "Storing Old Values: OG: " << ogBBx << " , "<< ogBBy << " DEST: "<< dest_x_var << " , "<< dest_y_var <<endl;
 							subState = MAXWELL_ORIENT_WAIT_1;
 						}
 					// } else { //offscreen
@@ -157,7 +159,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 					cout << "BB Values: " << bbx << " , "<< bby <<endl;
 					cout << " " << endl;
 					output[0] = "drive";
-					output[1] = "15";
+					output[1] = "10";
 					output[2] = speed;
 					
 					subState = ORIENT_WAIT;
@@ -170,7 +172,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 					if (direction == "Stationary") {
 						subState = ORIENT_FINISHED;
 					}
-					if (!offscreen){
+					if (offscreen){
 						robotState = MAXWELL_OFFSCREEN;
 						subState = ORIENT_IDLE;
 					}
@@ -201,6 +203,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 
 		case MAXWELL_TURN:
 			cout << "MAXWELL_TURN" << endl;
+			cout << degreeToTurn << endl;
 			cout << " " << endl;
 			degreeToTurnStr = to_string(degreeToTurn);
 			output[0] = "turn";
@@ -218,7 +221,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 				robotState = MAXWELL_DRIVE;
 			}
 
-			if (driveDistance <= 75) {
+			if (driveDistance <= 15) {
 				newBBRad = bbR;
 				dest_rad_var = destR;
 				cout << "W2 Target < 20!: " << driveDistance << " new BBR: " << newBBRad << " , dest rad: " << destR << endl;
@@ -248,18 +251,23 @@ vector<string> MaxwellStatechart(float driveDistance,
 			cout << " " << endl;
 			cout << "Dist to target (og): " << driveDistance << endl;
 			driveDistancealmostStr = driveDistance/3;
+			if (driveDistancealmostStr > 100){
+				driveDistancealmostStr = 100;
+			} else {
+				driveDistancealmostStr = driveDistancealmostStr*2;
+			}
 			cout << "Dist to target (is divided by 3): " << driveDistancealmostStr << endl;
 			if (driveDistancealmostStr > 100){
 				driveDistancealmostStr = 100;
 			}
-			cout << "Dist to target (100): " << driveDistancealmostStr << endl;
+			// cout << "Dist to target (100): " << driveDistancealmostStr << endl;
 			driveDistanceStr = to_string(driveDistancealmostStr);
 			output[0] = "drive";
 			output[1] = driveDistanceStr;
 			output[2] = speed;
 			
 			
-			if (driveDistance <= 75) {
+			if (driveDistance <= 15) {
 				newBBRad = bbR;
 				dest_rad_var = destR;
 				cout << "D Target < 20!: " << driveDistance << " new BBR: " << newBBRad << " , dest rad: " << dest_rad_var << endl;
@@ -320,6 +328,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 		// 	break;
 
 		case MAXWELL_OFFSCREEN_DRIVE:
+			usleep(1000);
 			cout << "MAXWELL_OFFSCREEN_DRIVE" << endl;
 			output[0] = "drive";
 			output[1] = "20";
