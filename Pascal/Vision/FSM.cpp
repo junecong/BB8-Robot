@@ -33,19 +33,8 @@ typedef enum {
 } subState_t;
 
 
-void MaxwellStatechartTest(string direction) {
-	if (direction == "North") {
-		cout << "N" << endl;
-	} else if (direction == "South") {
-		cout << "S" << endl;
-	} else if (direction == "West") {
-		cout << "W" << endl;
-	} else if (direction == "East") {
-		cout << "E" << endl;
-	}
-}
-
 float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx, float desty, int angle){
+
 	float angleRad;
 	float angleDegree;
 	float turn;
@@ -56,7 +45,7 @@ float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx,
 	float denom = sqrt(pow(oldNewVector[0],2) + pow(oldNewVector[1],2)) * sqrt(pow(newDestVector[0],2) + pow(newDestVector[1],2));
 
 	if (angle < 5){
-
+		
 	}
 	angleRad = acos ( num / denom );
 	angleDegree = (angleRad *180)/M_PI ;

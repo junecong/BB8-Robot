@@ -14,19 +14,16 @@
 #include "motionTrack.h"
 #include "FSM.h"
 
-bool debugMode = false;
-// bool global_Need_ToExit = false;
-
-// BoundedBuffer bBuffer(1);
-
 using namespace cv;
 using namespace std;
 
 // calibrate HSV values and save in output file for later use
 void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstream &file) {
 
-    namedWindow("Control", WINDOW_NORMAL); //create a window called "Control"
+	//create a window called "Control"
+    namedWindow("Control", WINDOW_NORMAL);
     resizeWindow("Control", 300, 100);
+
 	// start calibration
 	int iLowH = 0;
 	int iHighH = 179;
@@ -61,9 +58,11 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
 
 	    Mat imgHSV, imgThresholded;
 
-	    cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV
+	    //Convert the captured frame from BGR to HSV
+	    cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV);
 
-	    inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image
+	    //Threshold the image
+	    inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded);
 	      
 	    //morphological opening (removes small objects from the foreground)
 	    erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
@@ -76,7 +75,8 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
 	    *lowerBound = Scalar(iLowH, iLowS, iLowV);
 	    *upperBound = Scalar(iHighH, iHighS, iHighV);
 
-	    imshow("Thresholded Image", imgThresholded); //show the thresholded image
+	    //show the thresholded image
+	    imshow("Thresholded Image", imgThresholded);
 
         if (waitKey(30) >= 0) {
         	file << iLowH << endl;
@@ -96,29 +96,20 @@ void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstrea
 void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound,
 				 vector<Vec3f> circles, bool isObject) {
 	Mat gray, blur, hsv_frame;
-	// imshow not supported on intel edison boards
-	// comment out when uploading to board
+
 	// imshow("original frame", frame);
 	GaussianBlur(*frame, blur, Size(11,11), 0, 0);
 	cvtColor(blur, hsv_frame, CV_BGR2HSV);
 	// imshow("hsv image", hsv_frame);
 
+	// mask hsv_frame with upper and lower HSV bounds
 	inRange(hsv_frame, lowerBound, upperBound, *mask);
 
-	// imshow("mask1", mask);
-	// Create a structuring element
-    // int erosion_size = 6;  
- 	// Mat element = getStructuringElement(cv::MORPH_CROSS,
- 	//     cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
- 	//     cv::Point(erosion_size, erosion_size) );
-	// erode(mask, mask, element, Point(-1,-1), 2);
-	// dilate(mask, mask, element, Point(-1,-1), 2);
-
-    //morphological opening (removes small objects from the foreground)
+    // morphological opening (removes small objects from the foreground)
     erode(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
     dilate(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
 
-    //morphological closing (removes small holes from the foreground)
+    // morphological closing (removes small holes from the foreground)
     dilate(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
     erode(*mask, *mask, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
 
@@ -157,7 +148,6 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 			}
 		}
 
-
 		// vector<Point> correctContour = contours[contour_index];
 		float min_radius;
 		float max_radius;
@@ -167,7 +157,6 @@ void detectObject(Mat *frame, vector<Vec3f> circles, vector<vector<Point> > cont
 		float dist_radius;
 		Point2f min_center;
 		Point2f max_center;
-
 
 		for (int i = 0; i < largest_contours.size(); i++){
 			vector<Point> correctContour = largest_contours[i];
@@ -481,6 +470,7 @@ int analyzeVideo() {
     	imshow("drawing", frame);
 
 		if (waitKey(30) >= 0) {
+			
 			cap.release();
 			destroyAllWindows();
 			break;

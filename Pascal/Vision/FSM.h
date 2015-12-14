@@ -8,9 +8,7 @@
 
 using namespace std;
 
-int test();
-void MaxwellStatechartTest(string direction);
-float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx, float desty);
+float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx, float desty, int angle);
 vector<string> MaxwellStatechart(
 	float driveDistance,
 	bool isOffscreen,

@@ -16,8 +16,6 @@
 
 // current ip of Maxwell Board, DO NOT CHANGE
 static char *ip = "192.168.42.1";
-bool localhostMode = false;
-bool sendMode = false;
 BoundedBuffer bBuffer(2);
 
 void error(const char *msg)
@@ -198,12 +196,7 @@ void setUpSocket(char *argv1, char *argv2) {
             error("ERROR writing to socket");
         }
 
-        // if (global_Need_ToExit) {
-        //   cout << "here now alskdjalksjd" << endl;
-        //     break;
-        // }
     }
-    // global_Need_ToExit = true;
     close(sockfd);
 }
 

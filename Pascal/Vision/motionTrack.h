@@ -19,60 +19,8 @@
 #define MAX_OBJ_DIST_BW_FRAMES 10
 #define ACTUAL_DIAMETER_IN_CM 16.f
 
-// extern bool debugMode;
-// extern bool global_Need_ToExit;
-
 using namespace cv;
 using namespace std;
-
-// struct BoundedBuffer {
-//     vector<vector<string> > buffer;
-//     int capacity;
-
-//     int front;
-//     int rear;
-//     int count;
-
-//     std::mutex lock;
-
-//     std::condition_variable not_full;
-//     std::condition_variable not_empty;
-
-//     BoundedBuffer(int capacity) : capacity(capacity), front(0), rear(0), count(0) {
-//         buffer.resize(capacity);
-//     }
-
-//     ~BoundedBuffer(){
-//     	buffer.clear();
-//     }
-
-//     void deposit(vector<string> data){
-//         std::unique_lock<std::mutex> l(lock);
-//         not_full.wait(l, [this](){return count != capacity; });
-
-//         buffer[rear] = data;
-//         rear = (rear + 1) % capacity;
-//         ++count;
-
-//         not_empty.notify_one();
-//     }
-
-//     vector<string> fetch(){
-//         std::unique_lock<std::mutex> l(lock);
-
-//         not_empty.wait(l, [this](){return count != 0; });
-
-//         vector<string> result = buffer[front];
-//         front = (front + 1) % capacity;
-//         --count;
-
-//         not_full.notify_one();
-
-//         return result;
-//     }
-// };
-
-// extern BoundedBuffer bBuffer;
 
 void calibrate(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, ofstream &file);
 void filterImage(Mat *frame, Mat *mask, Scalar lowerBound, Scalar upperBound,
