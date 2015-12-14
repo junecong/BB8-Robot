@@ -508,6 +508,11 @@ int analyzeVideo() {
 
 		updatePerspectiveAngle(&perspectiveAngle, dist, driveDistance, avgAngle);
 
+		// update the frame with the perspective angle
+		char perspective[50] = "";
+		sprintf(perspective, "angle: %f", perspectiveAngle);
+		putText(frame, perspective, Point(10, 250), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
+
 		if (debugMode) {
 			cout << endl;
 			cout << "distance left: " << driveDistance << endl;
