@@ -1,48 +1,38 @@
-#include <externals.h>
+#include "externals.h"
 
-struct BoundedBuffer {
-    vector<vector<string> > buffer;
-    int capacity;
+bool debugMode = false;
+bool sendMode = false;
+bool localhostMode = false;
 
-    int front;
-    int rear;
-    int count;
+BoundedBuffer::BoundedBuffer(int capacity) : capacity(capacity), front(0), rear(0), count(0) {
+    buffer.resize(capacity);
+}
 
-    mutex lock;
+BoundedBuffer::~BoundedBuffer(){
+	buffer.clear();
+}
 
-    condition_variable not_full;
-    condition_variable not_empty;
+void BoundedBuffer::deposit(vector<string> data){
+    unique_lock<mutex> l(lock);
+    not_full.wait(l, [this](){return count != capacity; });
 
-    BoundedBuffer(int capacity) : capacity(capacity), front(0), rear(0), count(0) {
-        buffer.resize(capacity);
-    }
+    buffer[rear] = data;
+    rear = (rear + 1) % capacity;
+    ++count;
 
-    ~BoundedBuffer(){
-    	buffer.clear();
-    }
+    not_empty.notify_one();
+}
 
-    void deposit(vector<string> data){
-        unique_lock<mutex> l(lock);
-        not_full.wait(l, [this](){return count != capacity; });
+vector<string> BoundedBuffer::fetch(){
+    unique_lock<mutex> l(lock);
 
-        buffer[rear] = data;
-        rear = (rear + 1) % capacity;
-        ++count;
+    not_empty.wait(l, [this](){return count != 0; });
 
-        not_empty.notify_one();
-    }
+    vector<string> result = buffer[front];
+    front = (front + 1) % capacity;
+    --count;
 
-    vector<string> fetch(){
-        unique_lock<mutex> l(lock);
+    not_full.notify_one();
 
-        not_empty.wait(l, [this](){return count != 0; });
-
-        vector<string> result = buffer[front];
-        front = (front + 1) % capacity;
-        --count;
-
-        not_full.notify_one();
-
-        return result;
-    }
-};
+    return result;
+}

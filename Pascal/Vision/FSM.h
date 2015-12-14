@@ -8,8 +8,6 @@
 
 using namespace std;
 
-int test();
-void MaxwellStatechartTest(string direction);
 float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx, float desty);
 vector<string> MaxwellStatechart(
 	float driveDistance,

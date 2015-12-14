@@ -28,19 +28,6 @@ typedef enum {
 	ORIENT_FINISHED
 } subState_t;
 
-
-void MaxwellStatechartTest(string direction) {
-	if (direction == "North") {
-		cout << "N" << endl;
-	} else if (direction == "South") {
-		cout << "S" << endl;
-	} else if (direction == "West") {
-		cout << "W" << endl;
-	} else if (direction == "East") {
-		cout << "E" << endl;
-	}
-}
-
 float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx, float desty){
 	float angleRad;
 	float angleDegree;
