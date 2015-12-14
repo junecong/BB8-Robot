@@ -72,7 +72,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 	float destx,
 	float desty,
 	float destR,
-	string direction){
+	string direction) {
 	vector<string> output(3);
 
 	// local state
@@ -183,7 +183,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 						output[0] = "stop";
 					}
 				}
-
+			}
 			break;
 
 		case MAXWELL_DRIVE:
