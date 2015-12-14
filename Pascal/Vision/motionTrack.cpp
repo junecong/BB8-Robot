@@ -455,6 +455,11 @@ int analyzeVideo(vector<string> output) {
 			direction				// direction object is moving
 		);
 
+
+		if (debugMode) {
+			cout << "FSM output: " << output[0] << ", "<< output[1] << ", " << output[2] << endl;
+		}
+
 		bBuffer.deposit(output);
 
 		// signal main thread that message is done

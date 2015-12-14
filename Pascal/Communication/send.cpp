@@ -18,6 +18,7 @@
 // static char *ip = "192.168.42.1";
 static char *ip = "192.168.42.1";
 vector<string> FSM_message = {"", "", ""};
+bool sendMode = false;
 
 void error(const char *msg)
 {
@@ -115,12 +116,12 @@ void setUpSocket(char *argv1, char *argv2) {
         defaultIp = ip;
         defaultPort = PORT;
     } else {
-        defaultIp = argv1;
+        defaultIp = "localhost";
         if (argv2 == NULL) {
             printf("Using default port: 51717...\n");
             defaultPort = PORT;
         } else {
-            defaultPort = atoi(argv2);
+            defaultPort = PORT;
         }
     }
 
@@ -164,19 +165,32 @@ void setUpSocket(char *argv1, char *argv2) {
 
         // while (!messageReady);
 
-        vector<string> message = bBuffer.fetch();
+        if (sendMode) {
+            memset(buffer, 0, strlen(buffer));
+            cout << "input drive command: ";
+            cin  >> buffer;
+            memcpy(data, buffer, strlen(buffer));
+            memset(buffer, 0, strlen(buffer));
+            cout << "input dist/degree command: ";
+            cin  >> buffer;
+            memcpy(dist_angle, buffer, strlen(buffer));
+            memset(buffer, 0, strlen(buffer));
+            cout << "input Speed percent command: ";
+            cin  >> buffer;
+            memcpy(percentSpeed, buffer, strlen(buffer));
 
-        cout << "output from analyzeVideo: " << message[0] << ", " << message[1] << ", " << message[2] << endl;
+        } else {
 
-        // create packet 
-        message[0].copy(data, message[0].size());
-        message[1].copy(dist_angle, message[1].size());
-        message[2].copy(percentSpeed, message[2].size());
-        cout << "output after storing to arrays: " << message[0] << ", " << message[1] << ", " << message[2] << endl;
+            vector<string> message = bBuffer.fetch();
+
+            // create packet 
+            message[0].copy(data, message[0].size());
+            message[1].copy(dist_angle, message[1].size());
+            message[2].copy(percentSpeed, message[2].size());
+        }
         char packet[256];
         memset(packet, 0, strlen(packet));
         packMessage(data, dist_angle, percentSpeed, packet);
-        cout << "output from packMessage: " << packet << endl;
 
         // send data packet
         n = write(sockfd, packet, strlen(packet) + 1);
@@ -195,9 +209,19 @@ void setUpSocket(char *argv1, char *argv2) {
 }
 
 int main(int argc, char *argv[]) {
-    analyzeVideo(FSM_message);
-    // thread to send message
+    if (argc > 1) {
+        if (strcmp(argv[1], "-f") == 0) {
+            debugMode = true;
+        } else if (strcmp(buffer, "-s") == 0) {
+            sendMode = true;
+        }
+    }
     thread t1(setUpSocket, argv[1], argv[2]);
+    if (!sendMode) {
+        analyzeVideo(FSM_message);
+    }
+    // thread to send message
+    // thread t1(setUpSocket, argv[1], argv[2]);
     t1.join();
 
     return 0;

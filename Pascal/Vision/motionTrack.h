@@ -18,6 +18,7 @@
 #define MAX_OBJ_DIST_BW_FRAMES 10
 #define ACTUAL_DIAMETER_IN_CM 16.f
 
+extern bool debugMode;
 extern int numThreadsFinished;
 extern bool global_Need_ToExit;
 
