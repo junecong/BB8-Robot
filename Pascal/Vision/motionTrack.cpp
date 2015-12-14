@@ -18,6 +18,8 @@ condition_variable no_message;
 bool messageReady = false;
 bool debugMode = false;
 
+BoundedBuffer bBuffer(5);
+
 using namespace cv;
 using namespace std;
 
@@ -304,7 +306,7 @@ void userInput(VideoCapture cap, Scalar *lowerBound, Scalar *upperBound, char *f
 }
 
 //default camera at 0
-int analyzeVideo(string output[]) {
+int analyzeVideo(vector<string> output) {
 	VideoCapture cap;
 	deque <Point2f> objectPoints;
 	deque <Point2f> destPoints;
@@ -439,7 +441,10 @@ int analyzeVideo(string output[]) {
 
 		// lock mutex to construct message from FSM
 		// lock_guard<std::mutex> lck(msg_mutex);
-		MaxwellStatechart(
+
+		// output.clear();
+
+		output = MaxwellStatechart(
 			driveDistance, 			// distance from object to destination
 			isOffscreen, 			// if Object is isOffscreen
 			avgCenterPoint.x, 		// x point of Object
@@ -448,12 +453,11 @@ int analyzeVideo(string output[]) {
 			avgDestPoint.x, 		// x point of Destination
 			avgDestPoint.y, 		// y point of Destination
 			avgDestRadius,			// radius of destination
-			direction,				// direction object is moving
-			output					// output message
+			direction				// direction object is moving
 		);
 
-		cout << "output from motionTrack: "<< output[0] << ", " << output[1] << ", "<< output[2] << endl;
-
+		cout << "here" << endl;
+		bBuffer.deposit(output);
 
 		// signal main thread that message is done
 		messageReady = true;

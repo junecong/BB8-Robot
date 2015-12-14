@@ -17,7 +17,7 @@
 // current ip after wifi script, DO NOT CHANGE
 // static char *ip = "192.168.42.1";
 static char *ip = "192.168.42.1";
-string FSM_message[3];
+vector<string> FSM_message = {"", "", ""};
 
 void error(const char *msg)
 {
@@ -162,15 +162,17 @@ void setUpSocket(char *argv1, char *argv2) {
         //     no_message.wait(lck);
         // }
 
-        while (!messageReady);
+        // while (!messageReady);
 
-        cout << "output from analyzeVideo: " << FSM_message[0] << ", " << FSM_message[1] << ", " << FSM_message[2] << endl;
+        vector<string> message = bBuffer.fetch();
+
+        cout << "output from analyzeVideo: " << message[0] << ", " << message[1] << ", " << message[2] << endl;
 
         // create packet 
-        FSM_message[0].copy(data, FSM_message[0].size());
-        FSM_message[1].copy(dist_angle, FSM_message[1].size());
-        FSM_message[2].copy(percentSpeed, FSM_message[2].size());
-        cout << "output after storing to arrays: " << FSM_message[0] << ", " << FSM_message[1] << ", " << FSM_message[2] << endl;
+        message[0].copy(data, message[0].size());
+        message[1].copy(dist_angle, message[1].size());
+        message[2].copy(percentSpeed, message[2].size());
+        cout << "output after storing to arrays: " << message[0] << ", " << message[1] << ", " << message[2] << endl;
         char packet[256];
         memset(packet, 0, strlen(packet));
         packMessage(data, dist_angle, percentSpeed, packet);
@@ -183,18 +185,18 @@ void setUpSocket(char *argv1, char *argv2) {
             error("ERROR writing to socket");
         }
 
-        memset(buffer, 0, 256);
-        n = read(sockfd, buffer, 255);
+        // memset(buffer, 0, 256);
+        // n = read(sockfd, buffer, 255);
 
-        cout << buffer << endl;
+        // cout << buffer << endl;
 
-        if (n < 0) {
-            error("ERROR reading from socket");
-        }
+        // if (n < 0) {
+        //     error("ERROR reading from socket");
+        // }
 
-        if (strcmp(buffer, "done") == 0) {
-            break;
-        }
+        // if (strcmp(buffer, "done") == 0) {
+        //     break;
+        // }
     }
     close(sockfd);
 }
