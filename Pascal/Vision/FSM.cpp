@@ -19,13 +19,13 @@ typedef enum {
 	MAXWELL_DRIVE,
 	MAXWELL_OFFSCREEN,
 	MAXWELL_TURN_180,
-	// MAXWELL_OFFSCREEN_DRIVE,
+	MAXWELL_OFFSCREEN_DRIVE,
 	// MAXWELL_OFFSCREEN_WAIT,
 	MAXWELL_DONE
 } robotState_t;
 
 typedef enum {
-	ORIENT_IDLE = 9,
+	ORIENT_IDLE = 10,
 	MAXWELL_ORIENT_WAIT_1,
 	ORIENT_INITIAL_FORWARD,
 	ORIENT_WAIT,
@@ -44,9 +44,7 @@ float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx,
 	float num = (oldNewVector[0] * newDestVector[0]) + (oldNewVector[1] * newDestVector[1]);
 	float denom = sqrt(pow(oldNewVector[0],2) + pow(oldNewVector[1],2)) * sqrt(pow(newDestVector[0],2) + pow(newDestVector[1],2));
 
-	if (angle < 5){
-		
-	}
+
 	angleRad = acos ( num / denom );
 	angleDegree = (angleRad *180)/M_PI ;
 	turn = (oldNewVector[0]*oldDestVector[1]) - (oldNewVector[1]*oldDestVector[0]);
@@ -61,15 +59,15 @@ float orient (float ogBBx, float ogBBy, float newBBx, float newBBy, float destx,
 	cout << "Orient Function input: " << ogBBx << " , " << ogBBy << " , " << newBBx << " , "  << newBBy << " , " << destx << " , " << desty << endl;
 	cout << "Orient Function Called: " << angleDegree << endl;
 
-	if (angle < 5){ //low angle camera
-		if (angleDegree > 30){
-			angleDegree = angleDegree - 20;
-		} else if (angleDegree < -30) {
-			angleDegree = angleDegree + 20;
-		}
-	}
+	// if (angle < 5){ //low angle camera
+	// 	if (angleDegree > 30){
+	// 		angleDegree = angleDegree - 20;
+	// 	} else if (angleDegree < -30) {
+	// 		angleDegree = angleDegree + 20;
+	// 	}
+	// }
 
-	cout << "Orient Function result after padding: " << angleDegree << endl;
+	// cout << "Orient Function result after padding: " << angleDegree << endl;
 
 	return angleDegree;
 }
@@ -111,15 +109,12 @@ vector<string> MaxwellStatechart(float driveDistance,
 			cout << "MAXWELL_IDLE (waiting state)" << endl;
 			cout << " " << endl;
 			if (direction == "Stationary") {
+
 				if (bbx != 0 && bby != 0 && !isnan(bbx) && !isnan(bby)){
-					cout << "NOT 0: " << bbx << " , " << bby << endl;
+					cout << "IDLE NOT 0: " << bbx << " , " << bby << endl;
 					robotState = MAXWELL_ORIENT;
 				}
-				
-			}
-			if (offscreen) {
-				cout << "in idle and offscreen" << endl;
-				robotState = MAXWELL_ORIENT;
+				cout << "IDLE IS 0" << endl;
 			}
 			break;
 		case MAXWELL_ORIENT:
@@ -127,24 +122,30 @@ vector<string> MaxwellStatechart(float driveDistance,
 			switch(subState){
 				case ORIENT_IDLE:
 					cout << "ORIENT_IDLE" << endl;
+					cout << "BB Values: " << bbx << " , "<< bby <<endl;
 					cout << " " << endl;
-					
-					if (bbx != 0 && bby != 0) {
-						ogBBx = bbx;
-						ogBBy = bby;
-						ogBBRad = bbR;
-						dest_x_var = desty;
-						dest_y_var = destx;
-						dest_rad_var = destR;
-						cout << "Storing Old Values: OG: " << ogBBx << " , "<< ogBBy << " DEST: "<< dest_x_var << " , "<< dest_y_var <<endl;
-						subState = MAXWELL_ORIENT_WAIT_1;
-
-					}
+					// if (!offscreen){
+						if (bbx != 0 && bby != 0) {
+							ogBBx = bbx;
+							ogBBy = bby;
+							ogBBRad = bbR;
+							dest_x_var = desty;
+							dest_y_var = destx;
+							dest_rad_var = destR;
+							cout << "Storing Old Values: OG: " << ogBBx << " , "<< ogBBy << " DEST: "<< dest_x_var << " , "<< dest_y_var <<endl;
+							subState = MAXWELL_ORIENT_WAIT_1;
+						}
+					// } else { //offscreen
+					// 	cout << "OFFSCREEN ORIENT " << ogBBx << " , "<< ogBBy << " DEST: "<< dest_x_var << " , "<< dest_y_var <<endl;
+					// 	robotState = MAXWELL_TURN_180;	
+					// 	subState = ORIENT_IDLE;				
+					// }
 					
 					break;
 
 				case MAXWELL_ORIENT_WAIT_1:
 					cout << "MAXWELL_ORIENT_WAIT_1 (waiting state)" << endl;
+					cout << "BB Values: " << bbx << " , "<< bby <<endl;
 					cout << " " << endl;
 					if (direction == "Stationary") {
 						subState = ORIENT_INITIAL_FORWARD;
@@ -153,6 +154,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 
 				case ORIENT_INITIAL_FORWARD:
 					cout << "ORIENT_INITIAL_FORWARD" << endl;
+					cout << "BB Values: " << bbx << " , "<< bby <<endl;
 					cout << " " << endl;
 					output[0] = "drive";
 					output[1] = "15";
@@ -163,6 +165,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 					
 				case ORIENT_WAIT:
 					cout << "ORIENT_WAIT (waiting state)" << endl;
+					cout << "BB Values: " << bbx << " , "<< bby <<endl;
 					cout << " " << endl;
 					if (direction == "Stationary") {
 						subState = ORIENT_FINISHED;
@@ -211,7 +214,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 				robotState = MAXWELL_DRIVE;
 			}
 
-			if (driveDistance <= -10) {
+			if (driveDistance <= 75) {
 				newBBRad = bbR;
 				dest_rad_var = destR;
 				cout << "W2 Target < 20!: " << driveDistance << " new BBR: " << newBBRad << " , dest rad: " << destR << endl;
@@ -252,7 +255,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 			output[2] = speed;
 			
 			
-			if (driveDistance <= 10) {
+			if (driveDistance <= 75) {
 				newBBRad = bbR;
 				dest_rad_var = destR;
 				cout << "D Target < 20!: " << driveDistance << " new BBR: " << newBBRad << " , dest rad: " << dest_rad_var << endl;
@@ -263,19 +266,9 @@ vector<string> MaxwellStatechart(float driveDistance,
 					output[0] = "stop";
 				}
 				robotState = MAXWELL_IDLE;
-				// if ((bbx <= destx + 50) && (bbx >= destx - 50)){ //check that newRad is about the same as destR
-				// 	cout << "D FIRST CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
-				
-				// 	if ((bby <= desty + 50) && (bby >= desty - 50)){
-				// 		cout << "D DONE CIRCLE!: new BB: " << bbx << " , "<< bby << " , dest: " << destx << " , " << desty << endl;
-				
-				// 		robotState = MAXWELL_DONE;
-				// 		// output.insert(0, "stop");
-				// 		output[0] = "stop";
-				// 	}
-				// }
 				
 			} else if (offscreen) {
+				cout << "offscreen bbx and bby values: " << bbx << " , " << bby << endl;
 				robotState = MAXWELL_OFFSCREEN;
 			} else {
 				robotState = MAXWELL_IDLE;
@@ -288,11 +281,11 @@ vector<string> MaxwellStatechart(float driveDistance,
 			cout << " " << endl;
 			output[0] = "stop";
 			// robotState = MAXWELL_ORIENT;
-			if (!offscreen) {
-				robotState = MAXWELL_IDLE;
-			} else {
+			// if (!offscreen) {
+			// 	robotState = MAXWELL_IDLE;
+			// } else {
 				robotState = MAXWELL_TURN_180;
-			}
+			// }
 			break;
 
 		// case MAXWELL_OFFSCREEN_WAIT:
@@ -309,7 +302,7 @@ vector<string> MaxwellStatechart(float driveDistance,
 			output[1] = "170";
 			output[2] = speed;
 			// if (!offscreen) {
-				robotState = MAXWELL_IDLE;
+				robotState = MAXWELL_OFFSCREEN_DRIVE;
 			// } else {
 			// 	robotState = MAXWELL_OFFSCREEN_WAIT;
 			// }
@@ -322,15 +315,15 @@ vector<string> MaxwellStatechart(float driveDistance,
 		// 	robotState = MAXWELL_OFFSCREEN_DRIVE;
 		// 	break;
 
-		// case MAXWELL_OFFSCREEN_DRIVE:
-		// 	cout << "MAXWELL_OFFSCREEN_DRIVE" << endl;
-		// 	output[0] = "drive";
-		// 	output[1] = "10";
-		// 	output[2] = speed;
+		case MAXWELL_OFFSCREEN_DRIVE:
+			cout << "MAXWELL_OFFSCREEN_DRIVE" << endl;
+			output[0] = "drive";
+			output[1] = "20";
+			output[2] = speed;
 
-		// 	robotState = MAXWELL_IDLE;
+			robotState = MAXWELL_IDLE;
 		
-		// 	break;
+			break;
 
 		case MAXWELL_DONE:
 			cout << "MAXWELL_DONE" << endl;
