@@ -300,12 +300,6 @@ vector<string> MaxwellStatechart(float driveDistance,
 			// }
 			break;
 
-		// case MAXWELL_OFFSCREEN_WAIT:
-		// 	cout << "MAXWELL_OFFSCREEN_WAIT" << endl;
-		// 	// sleep(10);
-		// 	// cout << "MAXWELL_OFFSCREEN_WAIT AFTER SLEEP" << endl;
-		// 	robotState = MAXWELL_TURN_180;
-		// 	break;
 
 		case MAXWELL_TURN_180:
 			cout << "MAXWELL_TURN_180" << endl;
@@ -328,7 +322,6 @@ vector<string> MaxwellStatechart(float driveDistance,
 		// 	break;
 
 		case MAXWELL_OFFSCREEN_DRIVE:
-			usleep(1000);
 			cout << "MAXWELL_OFFSCREEN_DRIVE" << endl;
 			output[0] = "drive";
 			output[1] = "20";
